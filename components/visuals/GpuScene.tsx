@@ -1,33 +1,33 @@
 "use client";
 
 import { Canvas, useFrame } from "@react-three/fiber";
-import { useEffect, useMemo, useRef } from "react";
+import { useEffect, useMemo, useRef, type RefObject } from "react";
 import {
   ACESFilmicToneMapping,
-  AdditiveBlending,
-  BoxGeometry,
-  BufferGeometry,
   CanvasTexture,
   Color,
   DoubleSide,
-  Float32BufferAttribute,
   Group,
   MathUtils,
-  Mesh,
   RepeatWrapping,
   SRGBColorSpace,
 } from "three";
 import { tokens } from "@/lib/config/theme";
 
 /**
- * Lightweight, procedural 3D acceleration board.
+ * Interactive, procedural 3D graphics card.
  *
- * Everything is generated from primitive geometry and a canvas-generated circuit
- * texture — there are no model downloads, so the scene stays small and the
- * first meaningful paint is not blocked. The scene is only mounted on large
- * screens without a reduced-motion preference, and it is paused whenever it
- * scrolls out of view or the tab is hidden.
+ * Modelled from primitives only, so there are no model downloads and the hero
+ * stays small. The card can be dragged to rotate and clicked to explode into its
+ * layers (shroud, fans, heatsink, PCB, backplate) then clicked again to close.
+ *
+ * The scene is only mounted on large screens without a reduced-motion
+ * preference, and it is paused whenever it scrolls out of view or the tab is
+ * hidden.
  */
+
+const CARD_W = 3.6;
+const CARD_H = 1.9;
 
 /** Deterministic PRNG so the board looks identical on every load. */
 function mulberry32(seed: number) {
@@ -40,6 +40,7 @@ function mulberry32(seed: number) {
   };
 }
 
+/** Circuit-board texture for the GPU die face. */
 function useCircuitTexture(): CanvasTexture | null {
   const texture = useMemo(() => {
     if (typeof document === "undefined") return null;
@@ -55,7 +56,6 @@ function useCircuitTexture(): CanvasTexture | null {
     ctx.fillStyle = "#0C0E0C";
     ctx.fillRect(0, 0, size, size);
 
-    // Layout floorplan blocks
     ctx.strokeStyle = "rgba(245, 230, 66, 0.10)";
     ctx.lineWidth = 1;
     for (let i = 1; i < 16; i += 1) {
@@ -68,7 +68,6 @@ function useCircuitTexture(): CanvasTexture | null {
       ctx.stroke();
     }
 
-    // Functional blocks (scheduler, tensor cores, memory controllers)
     for (let block = 0; block < 34; block += 1) {
       const w = 26 + random() * 84;
       const h = 22 + random() * 70;
@@ -80,7 +79,6 @@ function useCircuitTexture(): CanvasTexture | null {
       ctx.strokeRect(x + 0.5, y + 0.5, w - 1, h - 1);
     }
 
-    // Manhattan-routed traces
     ctx.lineWidth = 1.4;
     for (let trace = 0; trace < 120; trace += 1) {
       ctx.strokeStyle = `rgba(245, 230, 66, ${0.06 + random() * 0.24})`;
@@ -117,99 +115,134 @@ function useCircuitTexture(): CanvasTexture | null {
   return texture;
 }
 
-function buildTraceGeometry(): BufferGeometry {
-  const points: number[] = [];
-  const random = mulberry32(77);
-  const y = 0.1;
+const BODY = "#1E232A";
+const BODY_LIGHT = "#2A313B";
+const METAL = "#2A3027";
+const FIN = "#313830";
+const GOLD = "#C9A24A";
 
-  for (let index = 0; index < 30; index += 1) {
-    const z = -1.15 + random() * 2.3;
-    const direction = random() > 0.5 ? 1 : -1;
-    const start = direction * (0.85 + random() * 0.2);
-    const end = direction * (1.5 + random() * 1.1);
-    points.push(start, y, z, end, y, z);
-  }
+/** A twin-fan GPU cooler: perimeter shroud bars plus two spinning fans. */
+function Shroud({
+  fanRefs,
+}: {
+  fanRefs: [RefObject<Group | null>, RefObject<Group | null>];
+}) {
+  const bars: Array<[number, number, number, number]> = [
+    [CARD_W, 0.18, 0, CARD_H / 2 - 0.09],
+    [CARD_W, 0.18, 0, -CARD_H / 2 + 0.09],
+    [0.16, CARD_H, -CARD_W / 2 + 0.08, 0],
+    [0.16, CARD_H, CARD_W / 2 - 0.08, 0],
+    [0.16, CARD_H, 0, 0],
+  ];
 
-  for (let index = 0; index < 18; index += 1) {
-    const x = -2.1 + random() * 4.2;
-    points.push(x, y, -1.2, x, y, -0.95 - random() * 0.5);
-    points.push(x, y, 1.2, x, y, 0.95 + random() * 0.5);
-  }
-
-  const geometry = new BufferGeometry();
-  geometry.setAttribute("position", new Float32BufferAttribute(points, 3));
-  return geometry;
-}
-
-function useFinGeometry() {
-  return useMemo(() => {
-    const geometry = new BoxGeometry(0.035, 0.16, 0.46);
-    return geometry;
-  }, []);
-}
-
-function Accelerator() {
-  const group = useRef<Group>(null);
-  const scan = useRef<Mesh>(null);
-  const circuitTexture = useCircuitTexture();
-  const textureRef = useRef<CanvasTexture | null>(null);
-  const traces = useMemo(() => buildTraceGeometry(), []);
-  const finGeometry = useFinGeometry();
-
-  useEffect(() => {
-    textureRef.current = circuitTexture;
-  }, [circuitTexture]);
-
-  useEffect(() => {
-    return () => {
-      traces.dispose();
-      finGeometry.dispose();
-    };
-  }, [traces, finGeometry]);
-
-  const fins = useMemo(
-    () => Array.from({ length: 40 }, (_, index) => -2.35 + index * 0.12),
+  const blades = useMemo(
+    () =>
+      Array.from({ length: 10 }, (_, index) => {
+        const angle = (index / 10) * Math.PI * 2;
+        return {
+          angle,
+          x: Math.cos(angle) * 0.4,
+          y: Math.sin(angle) * 0.4,
+        };
+      }),
     [],
   );
 
-  useFrame((state, delta) => {
-    const current = group.current;
-    if (!current) return;
+  return (
+    <group>
+      {bars.map(([w, h, x, y], index) => (
+        <mesh key={`bar-${index}`} position={[x, y, 0.02]}>
+          <boxGeometry args={[w, h, 0.34]} />
+          <meshStandardMaterial color={BODY} metalness={0.6} roughness={0.42} />
+        </mesh>
+      ))}
 
-    const time = state.clock.elapsedTime;
-    const targetY = Math.sin(time * 0.16) * 0.32 + state.pointer.x * 0.14;
-    const targetX = -0.26 + Math.sin(time * 0.22) * 0.03 - state.pointer.y * 0.06;
+      {/* Accent strip along the lower shroud */}
+      <mesh position={[0, -CARD_H / 2 + 0.19, 0.2]}>
+        <boxGeometry args={[CARD_W - 0.5, 0.03, 0.02]} />
+        <meshBasicMaterial color={tokens.color.primary} />
+      </mesh>
 
-    current.rotation.y = MathUtils.damp(current.rotation.y, targetY, 2.4, delta);
-    current.rotation.x = MathUtils.damp(current.rotation.x, targetX, 2.4, delta);
-    current.position.y = Math.sin(time * 0.46) * 0.05;
+      {[-0.86, 0.86].map((x, index) => (
+        <group key={`fan-${x}`} position={[x, 0, 0.02]} rotation={[Math.PI / 2, 0, 0]}>
+          {/* Frame ring */}
+          <mesh>
+            <cylinderGeometry args={[0.7, 0.7, 0.3, 32, 1, true]} />
+            <meshStandardMaterial color={BODY_LIGHT} metalness={0.55} roughness={0.5} side={DoubleSide} />
+          </mesh>
 
-    if (textureRef.current) {
-      textureRef.current.offset.y = (time * 0.045) % 1;
-    }
+          {/* Rotor: hub + blades */}
+          <group ref={fanRefs[index]}>
+            <mesh position={[0, 0.02, 0]}>
+              <cylinderGeometry args={[0.17, 0.17, 0.32, 20]} />
+              <meshStandardMaterial color="#0E1013" metalness={0.75} roughness={0.3} />
+            </mesh>
+            {blades.map((blade) => (
+              <mesh
+                key={`blade-${blade.angle.toFixed(2)}`}
+                position={[blade.x, 0.01, blade.y]}
+                rotation={[0, -blade.angle, 0]}
+              >
+                <boxGeometry args={[0.34, 0.03, 0.16]} />
+                <meshStandardMaterial color={BODY_LIGHT} metalness={0.4} roughness={0.6} />
+              </mesh>
+            ))}
+          </group>
+        </group>
+      ))}
+    </group>
+  );
+}
 
-    if (scan.current) {
-      scan.current.position.z = ((time * 0.22) % 1) * 2.4 - 1.2;
-    }
-  });
+/** Dense fin stack that sits between the PCB and the shroud. */
+function Heatsink() {
+  const fins = useMemo(
+    () => Array.from({ length: 26 }, (_, index) => -CARD_W / 2 + 0.2 + index * 0.125),
+    [],
+  );
+  return (
+    <group>
+      {fins.map((x) => (
+        <mesh key={`fin-${x.toFixed(2)}`} position={[x, 0, 0]}>
+          <boxGeometry args={[0.045, CARD_H - 0.34, 0.3]} />
+          <meshStandardMaterial color={FIN} metalness={0.7} roughness={0.45} />
+        </mesh>
+      ))}
+    </group>
+  );
+}
+
+/** Printed circuit board with die, memory packages, PCIe fingers and connectors. */
+function Board({ circuitTexture }: { circuitTexture: CanvasTexture | null }) {
+  const memory = useMemo(
+    () => [
+      [-1.25, 0.5],
+      [-1.25, -0.5],
+      [1.25, 0.5],
+      [1.25, -0.5],
+      [-0.75, 0.62],
+      [0.75, 0.62],
+      [-0.75, -0.62],
+      [0.75, -0.62],
+    ],
+    [],
+  );
 
   return (
-    <group ref={group} rotation={[-0.26, 0, 0]}>
-      {/* Substrate */}
+    <group>
+      {/* PCB substrate */}
       <mesh>
-        <boxGeometry args={[5, 0.16, 2.6]} />
-        <meshStandardMaterial color="#121412" metalness={0.45} roughness={0.62} />
+        <boxGeometry args={[CARD_W - 0.1, CARD_H - 0.1, 0.07]} />
+        <meshStandardMaterial color="#0E100D" metalness={0.35} roughness={0.7} />
       </mesh>
 
-      {/* Edge accent under the substrate */}
-      <mesh position={[0, -0.1, 0]}>
-        <boxGeometry args={[5.06, 0.04, 2.66]} />
-        <meshBasicMaterial color={tokens.color.primary} transparent opacity={0.35} />
+      {/* GPU die + frame */}
+      <mesh position={[0, 0.05, 0.06]}>
+        <boxGeometry args={[0.92, 0.92, 0.06]} />
+        <meshStandardMaterial color="#171A15" metalness={0.7} roughness={0.4} />
       </mesh>
-
-      {/* Compute die */}
-      <mesh position={[0, 0.17, 0]}>
-        <boxGeometry args={[1.55, 0.18, 1.55]} />
+      <mesh position={[0, 0.05, 0.1]}>
+        <boxGeometry args={[0.78, 0.78, 0.04]} />
         <meshStandardMaterial
           color="#141712"
           metalness={0.85}
@@ -217,74 +250,183 @@ function Accelerator() {
           map={circuitTexture}
           emissiveMap={circuitTexture}
           emissive={new Color(tokens.color.primary)}
-          emissiveIntensity={0.75}
+          emissiveIntensity={0.6}
         />
       </mesh>
 
-      {/* Die frame */}
-      <mesh position={[0, 0.1, 0]}>
-        <boxGeometry args={[1.78, 0.1, 1.78]} />
-        <meshStandardMaterial color="#1C2018" metalness={0.7} roughness={0.4} />
+      {/* Memory packages */}
+      {memory.map(([x, y]) => (
+        <mesh key={`mem-${x}-${y}`} position={[x ?? 0, y ?? 0, 0.06]}>
+          <boxGeometry args={[0.4, 0.2, 0.05]} />
+          <meshStandardMaterial color="#161A15" metalness={0.6} roughness={0.5} />
+        </mesh>
+      ))}
+
+      {/* PCIe gold fingers along the bottom edge */}
+      <mesh position={[0, -CARD_H / 2 + 0.06, 0]}>
+        <boxGeometry args={[1.5, 0.22, 0.1]} />
+        <meshStandardMaterial color={GOLD} metalness={0.95} roughness={0.28} />
       </mesh>
 
-      {/* Memory stacks */}
-      {[
-        [-1.7, -0.62],
-        [-1.7, 0.62],
-        [1.7, -0.62],
-        [1.7, 0.62],
-      ].map(([x, z]) => (
-        <mesh key={`${x}-${z}`} position={[x ?? 0, 0.15, z ?? 0]}>
-          <boxGeometry args={[0.86, 0.14, 1.05]} />
-          <meshStandardMaterial color="#171A15" metalness={0.6} roughness={0.45} />
-        </mesh>
-      ))}
-
-      {/* Power stage */}
-      {Array.from({ length: 14 }).map((_, index) => (
-        <mesh key={`p-${index}`} position={[-2.1 + index * 0.32, 0.1, -1.1]}>
-          <boxGeometry args={[0.2, 0.06, 0.14]} />
-          <meshStandardMaterial color="#1E221A" metalness={0.5} roughness={0.6} />
-        </mesh>
-      ))}
-
-      {/* Cooling fin rows along the board edges */}
-      {fins.map((x) => (
-        <mesh
-          key={`f-${x.toFixed(2)}-a`}
-          position={[x, 0.12, 1.18]}
-          geometry={finGeometry}
-        >
-          <meshStandardMaterial color="#20241C" metalness={0.55} roughness={0.5} />
-        </mesh>
-      ))}
-      {fins.map((x) => (
-        <mesh
-          key={`f-${x.toFixed(2)}-b`}
-          position={[x, 0.12, -1.18]}
-          geometry={finGeometry}
-        >
-          <meshStandardMaterial color="#20241C" metalness={0.55} roughness={0.5} />
-        </mesh>
-      ))}
-
-      {/* Board-level routing */}
-      <lineSegments geometry={traces}>
-        <lineBasicMaterial color={tokens.color.primary} transparent opacity={0.32} />
-      </lineSegments>
-
-      {/* Scanning plane */}
-      <mesh ref={scan} position={[0, 0.28, 0]}>
-        <planeGeometry args={[4.8, 2.4]} />
-        <meshBasicMaterial
-          color={tokens.color.primaryBright}
-          transparent
-          opacity={0.06}
-          blending={AdditiveBlending}
-          side={DoubleSide}
-          depthWrite={false}
-        />
+      {/* Display outputs bracket on the left */}
+      <mesh position={[-CARD_W / 2 + 0.04, 0, 0.16]}>
+        <boxGeometry args={[0.06, CARD_H - 0.3, 0.5]} />
+        <meshStandardMaterial color="#2A2E28" metalness={0.8} roughness={0.4} />
       </mesh>
+      {[-0.34, 0, 0.34].map((y) => (
+        <mesh key={`port-${y}`} position={[-CARD_W / 2 + 0.09, y, 0.16]}>
+          <boxGeometry args={[0.04, 0.14, 0.22]} />
+          <meshStandardMaterial color="#07090A" metalness={0.2} roughness={0.9} />
+        </mesh>
+      ))}
+
+      {/* 12V power connector on the top edge */}
+      <mesh position={[0.55, CARD_H / 2 - 0.08, 0.03]}>
+        <boxGeometry args={[0.62, 0.16, 0.24]} />
+        <meshStandardMaterial color="#0C0E10" metalness={0.4} roughness={0.7} />
+      </mesh>
+
+      {/* VRM row */}
+      {Array.from({ length: 7 }).map((_, index) => (
+        <mesh key={`vrm-${index}`} position={[-1.1 + index * 0.22, CARD_H / 2 - 0.32, 0.06]}>
+          <boxGeometry args={[0.14, 0.1, 0.05]} />
+          <meshStandardMaterial color={METAL} metalness={0.5} roughness={0.6} />
+        </mesh>
+      ))}
+    </group>
+  );
+}
+
+function Backplate() {
+  return (
+    <group>
+      <mesh>
+        <boxGeometry args={[CARD_W - 0.06, CARD_H - 0.12, 0.05]} />
+        <meshStandardMaterial color="#191D21" metalness={0.85} roughness={0.35} />
+      </mesh>
+      <mesh position={[0, 0, -0.04]}>
+        <boxGeometry args={[1.1, 0.3, 0.02]} />
+        <meshBasicMaterial color={tokens.color.primary} transparent opacity={0.5} />
+      </mesh>
+    </group>
+  );
+}
+
+function GpuCard({ interactionRef }: { interactionRef: RefObject<HTMLDivElement | null> }) {
+  const root = useRef<Group>(null);
+  const shroud = useRef<Group>(null);
+  const heatsink = useRef<Group>(null);
+  const board = useRef<Group>(null);
+  const backplate = useRef<Group>(null);
+  const fanLeft = useRef<Group>(null);
+  const fanRight = useRef<Group>(null);
+
+  const circuitTexture = useCircuitTexture();
+
+  const rotation = useRef({ x: -0.22, y: 0.5 });
+  const target = useRef({ x: -0.22, y: 0.5 });
+  const dragging = useRef(false);
+  const explodeTarget = useRef(false);
+  const explodeAmount = useRef(0);
+  const gesture = useRef({ x: 0, y: 0, moved: 0, startedAt: 0 });
+
+  useEffect(() => {
+    const element = interactionRef.current;
+    if (!element) return;
+
+    element.style.cursor = "grab";
+
+    const onPointerDown = (event: PointerEvent) => {
+      dragging.current = true;
+      gesture.current = {
+        x: event.clientX,
+        y: event.clientY,
+        moved: 0,
+        startedAt: performance.now(),
+      };
+      element.style.cursor = "grabbing";
+    };
+
+    const onPointerMove = (event: PointerEvent) => {
+      if (!dragging.current) return;
+      const dx = event.clientX - gesture.current.x;
+      const dy = event.clientY - gesture.current.y;
+      gesture.current.x = event.clientX;
+      gesture.current.y = event.clientY;
+      gesture.current.moved += Math.abs(dx) + Math.abs(dy);
+      target.current.y += dx * 0.007;
+      target.current.x = MathUtils.clamp(target.current.x + dy * 0.006, -1, 1);
+    };
+
+    const onPointerUp = () => {
+      if (!dragging.current) return;
+      dragging.current = false;
+      element.style.cursor = "grab";
+      const wasTap =
+        gesture.current.moved < 8 && performance.now() - gesture.current.startedAt < 600;
+      if (wasTap) explodeTarget.current = !explodeTarget.current;
+    };
+
+    element.addEventListener("pointerdown", onPointerDown);
+    window.addEventListener("pointermove", onPointerMove);
+    window.addEventListener("pointerup", onPointerUp);
+    window.addEventListener("pointercancel", onPointerUp);
+
+    return () => {
+      element.removeEventListener("pointerdown", onPointerDown);
+      window.removeEventListener("pointermove", onPointerMove);
+      window.removeEventListener("pointerup", onPointerUp);
+      window.removeEventListener("pointercancel", onPointerUp);
+      element.style.cursor = "";
+    };
+  }, [interactionRef]);
+
+  useFrame((state, delta) => {
+    // Gentle idle spin whenever the visitor is not dragging.
+    if (!dragging.current) target.current.y += delta * 0.12;
+
+    rotation.current.x = MathUtils.damp(rotation.current.x, target.current.x, 5, delta);
+    rotation.current.y = MathUtils.damp(rotation.current.y, target.current.y, 5, delta);
+
+    if (root.current) {
+      root.current.rotation.x = rotation.current.x;
+      root.current.rotation.y = rotation.current.y;
+      root.current.position.y = Math.sin(state.clock.elapsedTime * 0.6) * 0.03;
+    }
+
+    explodeAmount.current = MathUtils.damp(
+      explodeAmount.current,
+      explodeTarget.current ? 1 : 0,
+      6,
+      delta,
+    );
+    const amount = explodeAmount.current;
+
+    if (shroud.current) shroud.current.position.z = 0.34 + amount * 1.2;
+    if (heatsink.current) heatsink.current.position.z = 0.1 + amount * 0.6;
+    if (board.current) board.current.position.z = -0.02 - amount * 0.38;
+    if (backplate.current) backplate.current.position.z = -0.1 - amount * 1;
+    if (root.current) root.current.scale.setScalar(1.02 - amount * 0.2);
+
+    const spin = delta * (1.1 + amount * 6);
+    if (fanLeft.current) fanLeft.current.rotation.y += spin;
+    if (fanRight.current) fanRight.current.rotation.y -= spin;
+  });
+
+  return (
+    <group ref={root} scale={1.02}>
+      <group ref={shroud}>
+        <Shroud fanRefs={[fanLeft, fanRight]} />
+      </group>
+      <group ref={heatsink} position={[0, 0, 0.1]}>
+        <Heatsink />
+      </group>
+      <group ref={board}>
+        <Board circuitTexture={circuitTexture} />
+      </group>
+      <group ref={backplate} position={[0, 0, -0.1]}>
+        <Backplate />
+      </group>
     </group>
   );
 }
@@ -296,26 +438,31 @@ export default function GpuScene({
   active?: boolean;
   onReady?: () => void;
 }) {
+  const interactionRef = useRef<HTMLDivElement>(null);
+
   return (
-    <Canvas
-      dpr={[1, 1.6]}
-      frameloop={active ? "always" : "never"}
-      camera={{ position: [0.2, 2.9, 5.5], fov: 32 }}
-      gl={{ alpha: true, antialias: true, powerPreference: "high-performance" }}
-      onCreated={({ camera, gl }) => {
-        camera.lookAt(0, 0.1, 0);
-        gl.toneMapping = ACESFilmicToneMapping;
-        gl.toneMappingExposure = 1.08;
-        onReady?.();
-      }}
-      style={{ background: "transparent" }}
-    >
-      <ambientLight intensity={0.55} />
-      <directionalLight position={[3.6, 5.2, 2.6]} intensity={2.4} color="#FFF6D6" />
-      <directionalLight position={[-3.4, 1.4, -2.6]} intensity={0.7} color="#F5E642" />
-      <pointLight position={[-3.6, 1.8, -1.4]} intensity={26} distance={16} color="#F5E642" />
-      <pointLight position={[3.2, -1.2, 3.2]} intensity={12} distance={14} color="#FFF27A" />
-      <Accelerator />
-    </Canvas>
+    <div ref={interactionRef} className="h-full w-full touch-none">
+      <Canvas
+        dpr={[1, 1.6]}
+        frameloop={active ? "always" : "never"}
+        camera={{ position: [0, 0.35, 5.9], fov: 34 }}
+        gl={{ alpha: true, antialias: true, powerPreference: "high-performance" }}
+        onCreated={({ camera, gl }) => {
+          camera.lookAt(0, 0, 0);
+          gl.toneMapping = ACESFilmicToneMapping;
+          gl.toneMappingExposure = 1.1;
+          onReady?.();
+        }}
+        style={{ background: "transparent" }}
+      >
+        <ambientLight intensity={0.8} />
+        <directionalLight position={[3.6, 5.2, 4.2]} intensity={2.4} color="#FFF6D6" />
+        <directionalLight position={[-3.4, 1.4, 2.6]} intensity={0.35} color="#F5E642" />
+        <directionalLight position={[-2.5, 3.5, -4.5]} intensity={1.6} color="#F4F4EF" />
+        <pointLight position={[-3.6, 1.8, 2.4]} intensity={10} distance={16} color="#F5E642" />
+        <pointLight position={[3.2, -1.2, 3.2]} intensity={6} distance={14} color="#FFF27A" />
+        <GpuCard interactionRef={interactionRef} />
+      </Canvas>
+    </div>
   );
 }

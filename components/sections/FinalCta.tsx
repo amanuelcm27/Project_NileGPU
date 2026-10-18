@@ -5,11 +5,13 @@ import { Reveal } from "@/components/ui/Reveal";
 import { TrackedCtaLink } from "@/components/ui/TrackedCtaLink";
 import { sectionIds } from "@/lib/config/navigation";
 
-const assurances = [
-  "FREE TO JOIN",
-  "NO PAYMENT DETAILS",
-  "NO COMMITMENT",
-  "REMOVE YOUR DATA ON REQUEST",
+const gpuNames = [
+  "NVIDIA RTX 5090",
+  "NVIDIA H100",
+  "NVIDIA A100",
+  "NVIDIA RTX 4090",
+  "NVIDIA L40S",
+  "NVIDIA A6000",
 ];
 
 /**
@@ -62,12 +64,6 @@ export function FinalCta() {
                 Get Early Access
                 <ArrowRight aria-hidden className="h-4 w-4" />
               </TrackedCtaLink>
-              <a
-                href="/privacy"
-                className="label-mono-sm h-14 inline-flex items-center px-4 text-muted transition-colors hover:text-primary"
-              >
-                Privacy notice
-              </a>
             </div>
           </Reveal>
         </div>
@@ -75,7 +71,7 @@ export function FinalCta() {
         <Reveal delay={0.2}>
           <div className="stack-mask mx-auto mt-16 hidden max-w-4xl overflow-hidden lg:flex">
             <div className="animate-marquee-fast flex w-max shrink-0 items-center gap-8 pr-8">
-              {[...assurances, ...assurances].map((item, index) => (
+              {[...gpuNames, ...gpuNames].map((item, index) => (
                 <span key={`${item}-${index}`} className="label-mono-sm flex items-center gap-3 text-muted">
                   <span aria-hidden className="die-dot" />
                   {item}
@@ -84,7 +80,7 @@ export function FinalCta() {
             </div>
           </div>
           <ul className="mt-12 grid gap-2 text-center lg:hidden">
-            {assurances.map((item) => (
+            {gpuNames.map((item) => (
               <li key={item} className="label-mono-sm text-muted">
                 {item}
               </li>

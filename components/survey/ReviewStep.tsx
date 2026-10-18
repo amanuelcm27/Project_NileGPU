@@ -4,7 +4,6 @@ import { ArrowLeft, Loader2, RotateCcw, Send } from "lucide-react";
 import { Button } from "@/components/ui/Button";
 import type { ReviewRow } from "@/lib/survey/engine";
 import type { ApplicantIdentity, StepId, SubmissionError, SubmissionStatus } from "@/lib/survey/types";
-import { brand } from "@/lib/config/brand";
 
 interface ReviewStepProps {
   identity: Partial<ApplicantIdentity>;
@@ -59,8 +58,10 @@ export function ReviewStep({
         <div className="flex flex-wrap items-start justify-between gap-3 bg-surface-alt/40 p-4">
           <div>
             <p className="label-mono-sm text-muted">APPLICANT</p>
-            <p className="mt-1.5 text-[0.95rem] text-ink">{identity.fullName || "—"}</p>
-            <p className="font-mono text-[0.78rem] text-muted">{identity.email || "—"}</p>
+            <p className="mt-1.5 text-[0.95rem] text-ink">{identity.fullName || "Not provided"}</p>
+            <p className="font-mono text-[0.78rem] text-muted">
+              {identity.email || "Not provided"}
+            </p>
           </div>
           <button
             type="button"
@@ -110,44 +111,6 @@ export function ReviewStep({
           value={honeypot}
           onChange={(event) => onHoneypotChange(event.target.value)}
         />
-      </div>
-
-      <div className="mt-6 border border-line/80 bg-surface-alt/40 p-4">
-        <p className="label-mono-sm text-primary">BEFORE YOU SUBMIT</p>
-        <ul className="mt-3 space-y-2 text-[0.85rem] leading-relaxed text-muted">
-          <li className="flex gap-3">
-            <span aria-hidden className="die-dot mt-1.5" />
-            <span>
-              Registration is free. It is not a purchase, and it does not guarantee access or
-              capacity.
-            </span>
-          </li>
-          <li className="flex gap-3">
-            <span aria-hidden className="die-dot mt-1.5" />
-            <span>
-              We use your name and email to manage this registration and to contact you about early
-              access to {brand.name}. Survey answers are used to understand demand and prioritise
-              what we build.
-            </span>
-          </li>
-          <li className="flex gap-3">
-            <span aria-hidden className="die-dot mt-1.5" />
-            <span>
-              Your information is not displayed publicly. Write to {""}
-              <a
-                href={`mailto:${brand.contactEmail}`}
-                className="text-ink underline decoration-primary/70 underline-offset-2"
-              >
-                {brand.contactEmail}
-              </a>{" "}
-              to have it removed. Full details in the{" "}
-              <a href="/privacy" className="text-ink underline decoration-primary/70 underline-offset-2">
-                privacy notice
-              </a>
-              .
-            </span>
-          </li>
-        </ul>
       </div>
 
       {error ? (
@@ -211,11 +174,6 @@ export function ReviewStep({
           </Button>
         )}
       </div>
-
-      <p className="mt-3 font-mono text-[0.68rem] text-muted/70">
-        Submitting writes your application to our wishlist database. You will only see a confirmation
-        once the server confirms it was saved.
-      </p>
     </div>
   );
 }

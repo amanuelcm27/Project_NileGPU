@@ -191,13 +191,6 @@ export function QuestionStep({
           <ArrowRight aria-hidden className="h-3.5 w-3.5" />
         </Button>
       </div>
-
-      <p className="mt-3 font-mono text-[0.68rem] text-muted/70">
-        {isMulti
-          ? "Select every option that applies, then continue."
-          : "Choose one option, then continue."}{" "}
-        Press Enter to continue.
-      </p>
     </div>
   );
 }

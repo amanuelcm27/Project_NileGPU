@@ -82,8 +82,6 @@ export interface InterstitialDef {
   kind: "interstitial";
   headline: string;
   supporting?: string;
-  /** Short, skippable transition. Milliseconds until automatic continue. */
-  autoAdvanceMs: number;
 }
 
 export interface ReviewDef {

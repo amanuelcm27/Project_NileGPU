@@ -247,7 +247,6 @@ export function SurveyApp() {
     <div ref={containerRef} className="panel clip-corner overflow-hidden bg-surface">
       <div className="flex items-center justify-between border-b border-line bg-surface-alt/60 px-4 py-2.5 sm:px-6">
         <span className="label-mono-sm text-ink">NILEGPU · WISHLIST APPLICATION</span>
-        <span className="label-mono-sm text-muted">ONE QUESTION AT A TIME</span>
       </div>
 
       <ProgressRail progress={progress} />
@@ -290,7 +289,12 @@ export function SurveyApp() {
             ) : null}
 
             {stepDef.kind === "interstitial" ? (
-              <InterstitialStep definition={stepDef} onContinue={goNext} />
+              <InterstitialStep
+                definition={stepDef}
+                showBack={showBack}
+                onContinue={goNext}
+                onBack={goBack}
+              />
             ) : null}
 
             {stepDef.kind === "review" ? (

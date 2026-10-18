@@ -1,9 +1,8 @@
-import { ArrowRight, Cpu } from "lucide-react";
+import { ArrowRight } from "lucide-react";
 import { Reveal } from "@/components/ui/Reveal";
-import { Corners, Eyebrow } from "@/components/ui/Primitives";
+import { Corners } from "@/components/ui/Primitives";
 import { TrackedCtaLink } from "@/components/ui/TrackedCtaLink";
 import { GpuVisual } from "@/components/visuals/GpuVisual";
-import { brand } from "@/lib/config/brand";
 import { sectionIds } from "@/lib/config/navigation";
 
 const heroTicker = [
@@ -41,17 +40,7 @@ export function Hero() {
           {/* Copy */}
           <div className="lg:col-span-6 xl:col-span-6">
             <Reveal from="bottom" distance={12}>
-              <div className="flex flex-wrap items-center gap-x-5 gap-y-3">
-                <Eyebrow>ETHIOPIA / GPU CLOUD</Eyebrow>
-                <span className="label-mono-sm flex items-center gap-2 text-muted">
-                  <span aria-hidden className="animate-beacon h-1.5 w-1.5 rounded-none bg-primary" />
-                  {brand.annotations.availability}
-                </span>
-              </div>
-            </Reveal>
-
-            <Reveal delay={0.06}>
-              <h1 className="mt-7 font-display text-[clamp(2.6rem,7.4vw,5.2rem)] font-semibold leading-[0.94] tracking-[-0.03em]">
+              <h1 className="font-display text-[clamp(2.6rem,7.4vw,5.2rem)] font-semibold leading-[0.94] tracking-[-0.03em]">
                 <span className="block text-ink">GPU COMPUTE</span>
                 <span className="block">
                   <span className="text-primary">For</span>{" "}
@@ -62,8 +51,8 @@ export function Hero() {
 
             <Reveal delay={0.12}>
               <p className="mt-7 max-w-xl text-[1.02rem] leading-relaxed text-muted">
-                Access the compute you need to run models, fine-tune open-source AI, and build what
-                comes next — with a service designed around Ethiopian developers and teams.
+                Access the world&apos;s top tier GPUs to run your models, designed around Ethiopian
+                developers and teams.
               </p>
             </Reveal>
 
@@ -87,16 +76,6 @@ export function Hero() {
                 >
                   Explore Workloads
                 </TrackedCtaLink>
-              </div>
-            </Reveal>
-
-            <Reveal delay={0.24}>
-              <div className="mt-10 flex flex-wrap items-center gap-x-6 gap-y-3 border-t border-line/70 pt-5">
-                <span className="label-mono flex items-center gap-2 text-primary">
-                  <Cpu aria-hidden className="h-3.5 w-3.5" />
-                  {brand.annotations.hero}
-                </span>
-                <span className="label-mono-sm text-muted">WISHLIST REGISTRATION — FREE</span>
               </div>
             </Reveal>
           </div>

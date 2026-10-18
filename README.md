@@ -89,7 +89,7 @@ keys.**
 | `NEXT_PUBLIC_SUPABASE_ANON_KEY` | Yes\*    | Client+SRV  | Public anon key. Currently unused by the frontend (anonymous DB access is denied) but part of a complete Supabase setup. |
 | `SUPABASE_SERVICE_ROLE_KEY`     | Yes\*    | **Server**  | Insert key used by `POST /api/wishlist`. Never expose to the browser.                      |
 | `NEXT_PUBLIC_SITE_URL`          | No       | Client+SRV  | Absolute site URL for canonical links, sitemap and OG metadata. Falls back to the Vercel URL, then `http://localhost:3000`. |
-| `NEXT_PUBLIC_CONTACT_EMAIL`     | No       | Client      | Public contact address in the footer, privacy notice and review screen. Defaults to `wishlist@nilegpu.com`. |
+| `NEXT_PUBLIC_CONTACT_EMAIL`     | No       | Client      | Public contact address in the footer and privacy notice. Defaults to `wishlist@nilegpu.com`. |
 | `NEXT_PUBLIC_ANALYTICS_ENDPOINT`| No       | Client      | Optional analytics sink. Empty disables forwarding.                                       |
 | `UPSTASH_REDIS_REST_URL`        | No       | **Server**  | Distributed rate limiting (Upstash REST).                                                |
 | `UPSTASH_REDIS_REST_TOKEN`      | No       | **Server**  | Distributed rate limiting (Upstash REST).                                                |
@@ -249,14 +249,13 @@ Key behaviours:
 - **Honest progress.** The rail counts only *applicable* steps. While a branch
   answer is unknown the resolver expands the **longest** path, so the percentage
   never moves backwards and never credits an unanswered question as complete.
-- **Interstitials** after the first question group and near the end, with a
-  visible countdown that also auto-advances and can be skipped.
+- **Interstitials** after the first question group and near the end. They never
+  advance on their own: the applicant gets explicit **Back** and **Continue**
+  buttons after the transition.
 - **Back navigation preserves answers**, including answers on a branch you later
   abandoned.
-- **Review screen** lists every answer with inline edit links and places the
-  privacy notice next to the submit button.
-- **Nothing is persisted before submit** — a partial survey lives only in
-  component state.
+- **Review screen** lists every answer with inline edit links. Nothing is
+  persisted until the applicant submits.
 
 ---
 
@@ -279,7 +278,7 @@ components/
                         Interstitial, Review, Success, ProgressRail)
   ui/                   Button, Reveal, Primitives, TrackedCtaLink, DrawRule
   visuals/              GpuVisual (lazy 3D), GpuSchematic (SVG base/fallback),
-                        GpuScene, WorkloadGlyph, WaveformCanvas
+                        GpuScene (interactive card), WorkloadGlyph
 lib/
   config/               brand, theme, metadata, navigation, workloads
   survey/               types, questions, flow, engine, payload
@@ -319,10 +318,10 @@ tests/                  Vitest suites (flow, validation, endpoint, schema parity
   logic). No unvalidated value reaches the database.
 - **Abuse controls:** 16 KB request cap, JSON content-type check, honeypot field,
   a minimum completion time, and rate limiting.
-- **Privacy notice** at `/privacy`, linked from the footer and beside the submit
-  button. Identity (name/email) is never stored on its own — only as part of a
-  complete application. Duplicate registrations from the same email are allowed
-  by design (demand validation) and are not deduplicated.
+- **Privacy notice** at `/privacy`, linked from the footer. Identity (name/email)
+  is never stored on its own — only as part of a complete application. Duplicate
+  registrations from the same email are allowed by design (demand validation) and
+  are not deduplicated.
 
 ---
 
@@ -378,11 +377,13 @@ in the Supabase dashboard / SQL editor.
   arrow-key navigation and a single focusable tab.
 - Motion respects `prefers-reduced-motion`: transitions collapse to opacity-only
   and the 3D scene is not mounted at all.
-- The **3D GPU board** is procedural (no model downloads), lazy-loaded with
-  `next/dynamic` (`ssr: false`), only mounted on ≥1024px viewports without
-  reduced motion, started after idle, and paused when off-screen or when the tab
-  is hidden. A hand-built SVG schematic (`GpuSchematic`) is always the base layer
-  and the fallback, so the section is complete without WebGL.
+- The **3D GPU** is a procedurally-built twin-fan accelerator card (no model
+  downloads). It is lazy-loaded with `next/dynamic` (`ssr: false`), only mounted
+  on ≥1024px viewports without reduced motion, started after idle, and paused when
+  off-screen or when the tab is hidden. Visitors can **drag to rotate** and
+  **click to explode** it into its shroud, fans, heatsink, PCB and backplate, then
+  click again to reassemble. A hand-built SVG schematic (`GpuSchematic`) is always
+  the base layer and the fallback, so the section is complete without WebGL.
 - Brand check: the Three.js chunk is loaded lazily and is **not** referenced by
   the rendered HTML of the landing page.
 
@@ -408,6 +409,12 @@ in the Supabase dashboard / SQL editor.
   `503 service_unconfigured` when Supabase env vars are absent.
 - Client-side validation blocks empty names and malformed emails and surfaces
   field-level messages.
+- The **interactive 3D card** was driven with real pointer events and frames were
+  read back from the canvas: dragging rotates the board, a click explodes it into
+  its layers, a second click reassembles it, and the exploded spread stays inside
+  the frame. The static SVG schematic renders whenever 3D is unavailable.
+- Interstitials were confirmed to **wait for an explicit Continue**; Back returns
+  to the previous question, and no question sub-notes or extra helper copy remain.
 - Lighthouse on the landing page **and** `/privacy`: **Accessibility 1.00,
   Best Practices 1.00, SEO 1.00**, with zero failed audits.
 - No console warnings or errors during navigation and interaction.

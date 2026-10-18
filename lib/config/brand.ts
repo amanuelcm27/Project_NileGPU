@@ -15,11 +15,6 @@ export const brand = {
   location: "Ethiopia",
   /** Optional contact channel. Configure NEXT_PUBLIC_CONTACT_EMAIL in production. */
   contactEmail: process.env.NEXT_PUBLIC_CONTACT_EMAIL ?? "wishlist@nilegpu.com",
-  /** Small technical annotations used across the landing page. */
-  annotations: {
-    hero: "BUILT FOR AI WORKLOADS",
-    availability: "EARLY ACCESS REGISTRATION OPEN",
-  },
 } as const;
 
 export type Brand = typeof brand;

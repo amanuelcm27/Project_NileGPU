@@ -1,7 +1,6 @@
 import { Eyebrow } from "@/components/ui/Primitives";
 import { Reveal } from "@/components/ui/Reveal";
 import { SurveyApp } from "@/components/survey/SurveyApp";
-import { brand } from "@/lib/config/brand";
 import { sectionIds } from "@/lib/config/navigation";
 
 /**
@@ -33,45 +32,6 @@ export function SurveySection() {
                 Tell us what you&apos;re building and what compute you need. Your answers help
                 determine which workloads and capabilities the service will give you.
               </p>
-            </Reveal>
-
-            <Reveal delay={0.06}>
-              <ul className="mt-8 space-y-4 border-t border-line/70 pt-6">
-                {[
-                  "Registration is free. It is not a purchase and does not guarantee access.",
-                  "We will invite a limited number of applicants to early-access trials.",
-                  "Your answers are used to prioritise which workloads we support first.",
-                ].map((item) => (
-                  <li key={item} className="flex gap-3 text-[0.86rem] leading-relaxed text-muted">
-                    <span aria-hidden className="die-dot mt-1.5" />
-                    <span>{item}</span>
-                  </li>
-                ))}
-              </ul>
-            </Reveal>
-
-            <Reveal delay={0.1}>
-              <div className="mt-7 border border-line/80 bg-obsidian/60 p-4">
-                <p className="label-mono-sm text-primary">PRIVACY</p>
-                <p className="mt-2 text-[0.82rem] leading-relaxed text-muted">
-                  We collect your name, email and technical survey answers only. Nothing is displayed
-                  publicly, nothing is sold, and you can ask us to delete your record at any time.
-                </p>
-                <div className="mt-3 flex flex-wrap items-center gap-4">
-                  <a
-                    href="/privacy"
-                    className="label-mono-sm text-ink underline decoration-primary/70 underline-offset-4 hover:text-primary"
-                  >
-                    Read the privacy notice
-                  </a>
-                  <a
-                    href={`mailto:${brand.contactEmail}`}
-                    className="label-mono-sm text-muted hover:text-primary"
-                  >
-                    {brand.contactEmail}
-                  </a>
-                </div>
-              </div>
             </Reveal>
           </div>
         </div>

@@ -122,7 +122,7 @@ export function GpuVisual({ className }: { className?: string }) {
       {/* Static schematic — always rendered */}
       <div
         className={cn(
-          "absolute inset-0 flex items-center justify-center p-6 transition-opacity duration-700 sm:p-8",
+          "pointer-events-none absolute inset-0 flex items-center justify-center p-6 transition-opacity duration-700 sm:p-8",
           sceneReady ? "opacity-0" : "opacity-100",
         )}
       >
@@ -141,7 +141,16 @@ export function GpuVisual({ className }: { className?: string }) {
         </div>
       ) : null}
 
-      <div aria-hidden className="scanline" />
+      <div aria-hidden className="scanline pointer-events-none" />
+
+      {/* Interaction hint — only meaningful once the 3D card is live */}
+      {sceneReady ? (
+        <div className="pointer-events-none absolute inset-x-0 bottom-3 flex justify-center">
+          <span className="label-mono-sm border border-line/70 bg-obsidian/70 px-3 py-1.5 text-muted backdrop-blur-[2px]">
+            DRAG TO ROTATE · CLICK TO EXPLODE
+          </span>
+        </div>
+      ) : null}
 
       {/* Technical annotations */}
       <div aria-hidden className="pointer-events-none absolute inset-0">
@@ -161,11 +170,11 @@ export function GpuVisual({ className }: { className?: string }) {
       <Corners />
 
       {/* Panel header strip */}
-      <div className="absolute inset-x-0 top-0 flex items-center justify-between border-b border-line/70 bg-obsidian/55 px-4 py-2.5 backdrop-blur-[2px]">
+      <div className="pointer-events-none absolute inset-x-0 top-0 flex items-center justify-between border-b border-line/70 bg-obsidian/55 px-4 py-2.5 backdrop-blur-[2px]">
         <span className="label-mono-sm text-muted">ACCELERATOR / COMPUTE PLANE</span>
         <span className="label-mono-sm flex items-center gap-2 text-primary">
           <span aria-hidden className="animate-beacon h-1.5 w-1.5 bg-primary" />
-          SCHEMATIC
+          {sceneReady ? "INTERACTIVE" : "SCHEMATIC"}
         </span>
       </div>
     </div>

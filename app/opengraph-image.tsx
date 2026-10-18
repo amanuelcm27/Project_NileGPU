@@ -2,7 +2,7 @@ import { ImageResponse } from "next/og";
 import { brand } from "@/lib/config/brand";
 
 /** Social sharing preview, generated at build/request time — no remote assets. */
-export const alt = `${brand.name} — GPU compute for Ethiopia`;
+export const alt = `${brand.name}: GPU compute for Ethiopia`;
 export const size = { width: 1200, height: 630 };
 export const contentType = "image/png";
 
@@ -69,7 +69,7 @@ export default function OpengraphImage() {
           <div style={{ height: 2, width: "100%", background: "#30342A" }} />
           <div style={{ display: "flex", justifyContent: "space-between" }}>
             <div style={{ color: "#A4A79D", fontSize: 24 }}>
-              Early-access wishlist — tell us what you need to run.
+              Early-access wishlist: tell us what you need to run.
             </div>
             <div style={{ color: "#F5E642", fontSize: 22, letterSpacing: 3 }}>
               BUILT FOR AI WORKLOADS

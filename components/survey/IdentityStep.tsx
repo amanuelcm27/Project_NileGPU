@@ -1,6 +1,6 @@
 "use client";
 
-import { ArrowRight, Lock } from "lucide-react";
+import { ArrowRight } from "lucide-react";
 import { Button } from "@/components/ui/Button";
 import type { ApplicantIdentity } from "@/lib/survey/types";
 
@@ -63,23 +63,7 @@ export function IdentityStep({ values, errors, onChange, onSubmit }: IdentitySte
         />
       </div>
 
-      <div className="mt-6 flex items-start gap-3 border border-line/80 bg-surface-alt/40 p-4">
-        <Lock aria-hidden className="mt-0.5 h-4 w-4 shrink-0 text-primary" />
-        <p className="text-[0.82rem] leading-relaxed text-muted">
-          Your details are used to manage this wishlist registration and to contact you about early
-          access. They are not shown publicly and are never sold. You can ask us to remove them at
-          any time — see{" "}
-          <a href="/privacy" className="text-ink underline decoration-primary/70 underline-offset-2">
-            how we handle your information
-          </a>
-          .
-        </p>
-      </div>
-
-      <div className="mt-6 flex flex-col gap-3 border-t border-line pt-5 sm:flex-row sm:items-center sm:justify-between">
-        <span className="font-mono text-[0.68rem] text-muted/80">
-          FREE TO JOIN · NO PAYMENT DETAILS
-        </span>
+      <div className="mt-6 flex justify-end border-t border-line pt-5">
         <Button type="submit" size="lg" className="w-full sm:w-auto">
           Continue to questions
           <ArrowRight aria-hidden className="h-3.5 w-3.5" />

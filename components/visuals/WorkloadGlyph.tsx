@@ -114,7 +114,7 @@ function FineTuningGlyph() {
       {[0, 1, 2, 3].map((row) => (
         <line key={row} x1={26} y1={40 + row * 18} x2={72} y2={40 + row * 18} stroke={stroke} strokeOpacity="0.35" />
       ))}
-      <text x={49} y={20} textAnchor="middle" fill={stroke} fontFamily="monospace" fontSize="7" letterSpacing="1.2">
+      <text x={49} y={20} textAnchor="middle" fill={stroke} fontFamily="monospace" fontSize="7" letterSpacing="1.8">
         FROZEN BASE
       </text>
 
@@ -133,7 +133,7 @@ function FineTuningGlyph() {
           <line x1={104} y1={45 + row * 46} x2={138} y2={45 + row * 46} stroke={accent} strokeOpacity="0.7" />
         </g>
       ))}
-      <text x={121} y={20} textAnchor="middle" fill={accent} fontFamily="monospace" fontSize="7" letterSpacing="1.2">
+      <text x={121} y={20} textAnchor="middle" fill={accent} fontFamily="monospace" fontSize="7" letterSpacing="1.8">
         TRAINABLE ADAPTERS
       </text>
 
@@ -190,8 +190,8 @@ function TrainingGlyph() {
       <g className="animate-trace" fill="none" stroke="#FFF27A" strokeWidth="1.6" strokeDasharray="14 190">
         <path d="M114 40 H150 M170 56 V84 M150 100 H114 M94 84 V56" />
       </g>
-      <text x={20} y={70} fill={stroke} fontFamily="monospace" fontSize="7" letterSpacing="1.4">
-        ALLREDUCE
+      <text x={20} y={70} fill={stroke} fontFamily="monospace" fontSize="7" letterSpacing="1.8">
+        ALL REDUCE
       </text>
       <text x={206} y={70} fill={stroke} fontFamily="monospace" fontSize="7" letterSpacing="1.4">
         EPOCHS

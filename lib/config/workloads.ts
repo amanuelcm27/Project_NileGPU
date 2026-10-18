@@ -49,7 +49,7 @@ export const workloads: WorkloadEntry[] = [
     railLabel: "Training",
     description:
       "Train research models over many epochs. These jobs run for hours or days, hold a full optimizer state in memory and often need several GPUs coordinating gradients together.",
-    annotations: ["MULTI-GPU", "ALLREDUCE", "CHECKPOINTING"],
+    annotations: ["MULTI-GPU", "ALL REDUCE", "CHECKPOINTING"],
     note: "The workload that most often justifies infrastructure beyond a single workstation.",
   },
   {
@@ -83,6 +83,3 @@ export const workloads: WorkloadEntry[] = [
     note: "Closest to the edge of what consumer hardware can do at all.",
   },
 ];
-
-export const workloadDisclaimer =
-  "Reference descriptions of common workload types — not a hardware or product offer. The service is in early access and the delivery model is not final.";

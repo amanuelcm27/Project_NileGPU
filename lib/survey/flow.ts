@@ -1,21 +1,19 @@
 import type { InterstitialDef, StepDef, StepId, SurveyAnswers } from "@/lib/survey/types";
 import { getQuestion, isQuestionStep } from "@/lib/survey/questions";
 
-/** Short, skippable transitions placed between question groups. */
+/** Short transitions placed between question groups. */
 export const interstitials = {
   interstitialHalfway: {
     id: "interstitialHalfway",
     kind: "interstitial",
     headline: "You're halfway through.",
     supporting: "Let's understand how you work with compute today.",
-    autoAdvanceMs: 3200,
   },
   interstitialAlmost: {
     id: "interstitialAlmost",
     kind: "interstitial",
     headline: "Almost there.",
     supporting: "A few more answers and you will be the first to get access.",
-    autoAdvanceMs: 3200,
   },
 } satisfies Record<"interstitialHalfway" | "interstitialAlmost", InterstitialDef>;
 

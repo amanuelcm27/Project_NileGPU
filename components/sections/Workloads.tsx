@@ -7,8 +7,7 @@ import { Eyebrow } from "@/components/ui/Primitives";
 import { Reveal } from "@/components/ui/Reveal";
 import { WorkloadGlyph } from "@/components/visuals/WorkloadGlyph";
 import { sectionIds } from "@/lib/config/navigation";
-import { workloadDisclaimer, workloads } from "@/lib/config/workloads";
-import { cn } from "@/lib/utils/cn";
+import { workloads } from "@/lib/config/workloads";import { cn } from "@/lib/utils/cn";
 
 /**
  * Stable id for the single detail panel.
@@ -57,13 +56,13 @@ export function Workloads() {
         {/* Heading + rail */}
         <div className="lg:col-span-5">
           <Reveal>
-            <Eyebrow>WORKLOADS / 01—06</Eyebrow>
+            <Eyebrow>WORKLOADS / 01-06</Eyebrow>
             <h2 className="mt-6 font-display text-[clamp(1.9rem,4.4vw,3.1rem)] leading-[1.02] text-ink">
-              Compute for what you&apos;re building.
+              GPUs for what you&apos;re building.
             </h2>
             <p className="mt-5 max-w-md text-[0.95rem] leading-relaxed text-muted">
-              The service targets the GPU-heavy work Ethiopian developers, researchers and teams
-              already do — or are currently blocked from doing.
+              Our services target the GPU-heavy work Ethiopian developers, researchers and teams
+              struggle with and are blocked from doing.
             </p>
           </Reveal>
 
@@ -181,10 +180,7 @@ export function Workloads() {
                 </motion.div>
               </AnimatePresence>
 
-              <div className="flex flex-col gap-3 border-t border-line px-5 py-4 sm:flex-row sm:items-center sm:justify-between">
-                <p className="max-w-xl font-mono text-[0.68rem] leading-relaxed text-muted/80">
-                  {workloadDisclaimer}
-                </p>
+              <div className="flex items-center justify-end border-t border-line px-5 py-4">
                 <a
                   href={`#${sectionIds.earlyAccess}`}
                   className="label-mono-sm shrink-0 text-primary underline-offset-4 hover:underline"

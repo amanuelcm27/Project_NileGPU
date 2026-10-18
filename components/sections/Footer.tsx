@@ -20,10 +20,8 @@ export function Footer() {
               </span>
             </div>
             <p className="mt-5 max-w-sm text-[0.9rem] leading-relaxed text-muted">
-              {brand.tagline}. Currently validating demand through the early-access wishlist —
-              no GPU capacity is being sold on this website.
+              {brand.tagline}.
             </p>
-            <p className="mt-5 label-mono-sm text-primary">{brand.annotations.hero}</p>
           </div>
 
           <nav aria-label="Footer" className="lg:col-span-3">
@@ -55,18 +53,12 @@ export function Footer() {
               </li>
               <li className="font-mono text-[0.75rem] text-muted">{brand.location}</li>
             </ul>
-            <p className="mt-6 max-w-sm text-[0.78rem] leading-relaxed text-muted/80">
-              Write to us to have your wishlist information removed at any time.
-            </p>
           </div>
         </div>
 
         <div className="mt-12 flex flex-col gap-3 border-t border-line/70 pt-6 sm:flex-row sm:items-center sm:justify-between">
           <p className="font-mono text-[0.68rem] text-muted/80">
-            © {year} {brand.name}. Wishlist registration is free and creates no obligation.
-          </p>
-          <p className="font-mono text-[0.68rem] text-muted/80">
-            NO FABRICATED METRICS · NO LIVE PAYMENTS ON THIS SITE
+            © {year} {brand.name}.
           </p>
         </div>
       </div>
