@@ -26,10 +26,6 @@ export function Hero() {
       <div aria-hidden className="absolute inset-0 grid-backdrop opacity-30" />
       <div
         aria-hidden
-        className="absolute inset-x-0 top-0 h-[620px] bg-[radial-gradient(90%_60%_at_22%_0%,rgba(245,230,66,0.10),transparent_70%)]"
-      />
-      <div
-        aria-hidden
         className="absolute inset-x-0 bottom-0 h-40 bg-gradient-to-b from-transparent to-obsidian"
       />
       <div aria-hidden className="absolute inset-y-0 left-0 w-px bg-line/60" />

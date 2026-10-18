@@ -13,10 +13,6 @@ export function SurveySection() {
     <section id={sectionIds.earlyAccess} className="section relative border-t border-line/70">
       <div aria-hidden className="absolute inset-0 bg-surface/30" />
       <div aria-hidden className="absolute inset-0 trace-backdrop opacity-[0.4]" />
-      <div
-        aria-hidden
-        className="absolute inset-x-0 top-0 h-[420px] bg-[radial-gradient(80%_60%_at_70%_0%,rgba(245,230,66,0.09),transparent_70%)]"
-      />
       <div aria-hidden className="absolute inset-y-0 left-0 w-px bg-line/50" />
       <div aria-hidden className="absolute inset-y-0 right-0 w-px bg-line/50" />
 

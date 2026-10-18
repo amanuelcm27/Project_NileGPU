@@ -114,10 +114,6 @@ export function GpuVisual({ className }: { className?: string }) {
       )}
     >
       <div aria-hidden className="grid-backdrop absolute inset-0 opacity-40" />
-      <div
-        aria-hidden
-        className="absolute inset-0 bg-[radial-gradient(120%_90%_at_50%_0%,rgba(245,230,66,0.09),transparent_62%)]"
-      />
 
       {/* Static schematic — always rendered */}
       <div
@@ -140,8 +136,6 @@ export function GpuVisual({ className }: { className?: string }) {
           <GpuScene active={visible} onReady={() => setSceneReady(true)} />
         </div>
       ) : null}
-
-      <div aria-hidden className="scanline pointer-events-none" />
 
       {/* Interaction hint — only meaningful once the 3D card is live */}
       {sceneReady ? (

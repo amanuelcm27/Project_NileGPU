@@ -4,7 +4,7 @@
    NileGPU design tokens
    Palette, typography and motion values are the Tailwind theme itself, so
    utilities like `bg-obsidian`, `text-muted`, `border-line` and
-   `animate-scanline` are generated from the values below.
+   `animate-marquee` are generated from the values below.
    Mirrors lib/config/theme.ts (used for SVG/Canvas/Three.js colours).
    ========================================================================== */
 @theme {
@@ -28,8 +28,6 @@
   --font-mono: var(--font-jetbrains-mono), ui-monospace, SFMono-Regular, Menlo, monospace;
 
   /* Motion */
-  --animate-scanline: scanline 6.5s linear infinite;
-  --animate-scanline-slow: scanline 11s linear infinite;
   --animate-marquee: marquee 42s linear infinite;
   --animate-marquee-fast: marquee 24s linear infinite;
   --animate-beacon: beacon 2.6s ease-in-out infinite;
@@ -37,23 +35,6 @@
   --animate-trace-slow: trace 6s linear infinite;
   --animate-drift: drift 14s ease-in-out infinite;
   --animate-sweep: sweep 4.2s ease-in-out infinite;
-
-  @keyframes scanline {
-    0% {
-      transform: translateY(-6%);
-      opacity: 0;
-    }
-    8% {
-      opacity: 0.5;
-    }
-    92% {
-      opacity: 0.5;
-    }
-    100% {
-      transform: translateY(106%);
-      opacity: 0;
-    }
-  }
 
   @keyframes marquee {
     from {
@@ -267,22 +248,6 @@
 
   .hairline-top {
     border-top: 1px solid var(--color-line);
-  }
-
-  .scanline {
-    position: absolute;
-    inset-inline: 0;
-    height: 22%;
-    background: linear-gradient(
-      to bottom,
-      transparent,
-      rgb(245 230 66 / 0.07) 45%,
-      rgb(255 242 122 / 0.16) 50%,
-      rgb(245 230 66 / 0.07) 55%,
-      transparent
-    );
-    animation: var(--animate-scanline);
-    pointer-events: none;
   }
 
   .die-texture {

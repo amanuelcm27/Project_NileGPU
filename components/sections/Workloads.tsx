@@ -50,7 +50,6 @@ export function Workloads() {
   return (
     <section id={sectionIds.workloads} className="section relative border-t border-line/70">
       <div aria-hidden className="absolute inset-0 trace-backdrop opacity-[0.35]" />
-      <div aria-hidden className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-primary/40 to-transparent" />
 
       <div className="shell relative grid gap-10 lg:grid-cols-12 lg:gap-12">
         {/* Heading + rail */}

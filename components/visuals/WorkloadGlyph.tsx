@@ -114,7 +114,7 @@ function FineTuningGlyph() {
       {[0, 1, 2, 3].map((row) => (
         <line key={row} x1={26} y1={40 + row * 18} x2={72} y2={40 + row * 18} stroke={stroke} strokeOpacity="0.35" />
       ))}
-      <text x={49} y={20} textAnchor="middle" fill={stroke} fontFamily="monospace" fontSize="7" letterSpacing="1.8">
+      <text x={49} y={20} textAnchor="middle" fill={stroke} fontFamily="monospace" fontSize="6" letterSpacing="0.6">
         FROZEN BASE
       </text>
 
@@ -133,7 +133,7 @@ function FineTuningGlyph() {
           <line x1={104} y1={45 + row * 46} x2={138} y2={45 + row * 46} stroke={accent} strokeOpacity="0.7" />
         </g>
       ))}
-      <text x={121} y={20} textAnchor="middle" fill={accent} fontFamily="monospace" fontSize="7" letterSpacing="1.8">
+      <text x={121} y={20} textAnchor="middle" fill={accent} fontFamily="monospace" fontSize="6" letterSpacing="0.6">
         TRAINABLE ADAPTERS
       </text>
 
@@ -143,7 +143,7 @@ function FineTuningGlyph() {
       {[0, 1, 2, 3].map((row) => (
         <line key={row} x1={174} y1={40 + row * 18} x2={214} y2={40 + row * 18} stroke={accent} strokeOpacity="0.3" />
       ))}
-      <text x={194} y={20} textAnchor="middle" fill={accent} fontFamily="monospace" fontSize="7" letterSpacing="1.2">
+      <text x={194} y={20} textAnchor="middle" fill={accent} fontFamily="monospace" fontSize="6" letterSpacing="0.6">
         YOUR MODEL
       </text>
       <line x1={146} y1={67} x2={164} y2={67} stroke={accent} strokeWidth="1.4" />

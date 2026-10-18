@@ -24,10 +24,6 @@ export function FinalCta() {
   return (
     <section className="relative overflow-hidden border-t border-line/70 py-24 sm:py-32">
       <div aria-hidden className="absolute inset-0 grid-backdrop opacity-[0.18]" />
-      <div
-        aria-hidden
-        className="pointer-events-none absolute inset-x-0 top-1/2 h-[420px] -translate-y-1/2 bg-[radial-gradient(60%_50%_at_50%_50%,rgba(245,230,66,0.10),transparent_70%)]"
-      />
       <span
         aria-hidden
         className="pointer-events-none absolute inset-x-0 top-1/2 -translate-y-1/2 select-none text-center font-display text-[22vw] font-bold leading-none text-ink/[0.03]"

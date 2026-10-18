@@ -54,10 +54,6 @@ export function HowItWorks() {
       className="section relative overflow-hidden border-t border-line/70 bg-surface/40"
     >
       <div aria-hidden className="absolute inset-0 grid-backdrop opacity-[0.22]" />
-      <div
-        aria-hidden
-        className="absolute -right-40 top-1/4 h-[520px] w-[520px] rounded-full bg-[radial-gradient(circle,rgba(245,230,66,0.07),transparent_65%)]"
-      />
 
       <div className="shell relative grid gap-12 lg:grid-cols-12 lg:gap-16">
         <div className="lg:col-span-4">

@@ -378,7 +378,11 @@ in the Supabase dashboard / SQL editor.
 - Motion respects `prefers-reduced-motion`: transitions collapse to opacity-only
   and the 3D scene is not mounted at all.
 - The **3D GPU** is a procedurally-built twin-fan accelerator card (no model
-  downloads). It is lazy-loaded with `next/dynamic` (`ssr: false`), only mounted
+  downloads): the shroud, PCB and backplate are extruded from rounded profiles,
+  and the model carries pitched fan blades, machined edge trim, corner fasteners,
+  memory packages, VRM chokes, individual PCIe gold fingers, display outputs,
+  a pinned 12V connector, copper heat pipes/cold plate and a vented backplate. It is
+  lazy-loaded with `next/dynamic` (`ssr: false`), only mounted
   on ≥1024px viewports without reduced motion, started after idle, and paused when
   off-screen or when the tab is hidden. Visitors can **drag to rotate** and
   **click to explode** it into its shroud, fans, heatsink, PCB and backplate, then
