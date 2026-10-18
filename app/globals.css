@@ -1,0 +1,332 @@
+@import "tailwindcss";
+
+/* ==========================================================================
+   NileGPU design tokens
+   Palette, typography and motion values are the Tailwind theme itself, so
+   utilities like `bg-obsidian`, `text-muted`, `border-line` and
+   `animate-scanline` are generated from the values below.
+   Mirrors lib/config/theme.ts (used for SVG/Canvas/Three.js colours).
+   ========================================================================== */
+@theme {
+  /* Colour */
+  --color-obsidian: #090a09;
+  --color-surface: #121412;
+  --color-surface-alt: #191c18;
+  --color-ink: #f4f4ef;
+  --color-muted: #a4a79d;
+  --color-line: #30342a;
+  --color-line-strong: #454b3c;
+  --color-primary: #f5e642;
+  --color-primary-bright: #fff27a;
+  --color-primary-dim: #6d6620;
+  --color-danger: #ff6b5a;
+  --color-success: #9be86b;
+
+  /* Typography */
+  --font-display: var(--font-space-grotesk), "Space Grotesk", ui-sans-serif, system-ui, sans-serif;
+  --font-sans: var(--font-inter), "Inter", ui-sans-serif, system-ui, sans-serif;
+  --font-mono: var(--font-jetbrains-mono), ui-monospace, SFMono-Regular, Menlo, monospace;
+
+  /* Motion */
+  --animate-scanline: scanline 6.5s linear infinite;
+  --animate-scanline-slow: scanline 11s linear infinite;
+  --animate-marquee: marquee 42s linear infinite;
+  --animate-marquee-fast: marquee 24s linear infinite;
+  --animate-beacon: beacon 2.6s ease-in-out infinite;
+  --animate-trace: trace 3.4s linear infinite;
+  --animate-trace-slow: trace 6s linear infinite;
+  --animate-drift: drift 14s ease-in-out infinite;
+  --animate-sweep: sweep 4.2s ease-in-out infinite;
+
+  @keyframes scanline {
+    0% {
+      transform: translateY(-6%);
+      opacity: 0;
+    }
+    8% {
+      opacity: 0.5;
+    }
+    92% {
+      opacity: 0.5;
+    }
+    100% {
+      transform: translateY(106%);
+      opacity: 0;
+    }
+  }
+
+  @keyframes marquee {
+    from {
+      transform: translate3d(0, 0, 0);
+    }
+    to {
+      transform: translate3d(-50%, 0, 0);
+    }
+  }
+
+  @keyframes beacon {
+    0%,
+    100% {
+      opacity: 1;
+      box-shadow: 0 0 0 0 rgb(245 230 66 / 0.55);
+    }
+    50% {
+      opacity: 0.75;
+      box-shadow: 0 0 0 6px rgb(245 230 66 / 0);
+    }
+  }
+
+  @keyframes trace {
+    from {
+      stroke-dashoffset: 240;
+    }
+    to {
+      stroke-dashoffset: 0;
+    }
+  }
+
+  @keyframes drift {
+    0%,
+    100% {
+      transform: translate3d(0, 0, 0);
+    }
+    50% {
+      transform: translate3d(0, -10px, 0);
+    }
+  }
+
+  @keyframes sweep {
+    0% {
+      transform: translateX(-100%);
+    }
+    100% {
+      transform: translateX(400%);
+    }
+  }
+}
+
+/* ==========================================================================
+   Base
+   ========================================================================== */
+@layer base {
+  :root {
+    color-scheme: dark;
+    --nav-height: 4.25rem;
+    --shell-max: 84rem;
+    --shell-gutter: clamp(1.15rem, 4vw, 3.5rem);
+  }
+
+  * {
+    border-color: var(--color-line);
+  }
+
+  html {
+    scroll-behavior: smooth;
+    /* clip (not hidden) keeps position: sticky working while preventing
+       horizontal overflow from decorative visuals. */
+    overflow-x: clip;
+    -webkit-text-size-adjust: 100%;
+  }
+
+  body {
+    background-color: var(--color-obsidian);
+    color: var(--color-ink);
+    font-family: var(--font-sans);
+    font-feature-settings: "cv11", "ss01";
+    -webkit-font-smoothing: antialiased;
+    text-rendering: optimizeLegibility;
+    overflow-x: clip;
+  }
+
+  h1,
+  h2,
+  h3,
+  h4 {
+    font-family: var(--font-display);
+    font-weight: 600;
+    letter-spacing: -0.02em;
+    text-wrap: balance;
+  }
+
+  p {
+    text-wrap: pretty;
+  }
+
+  ::selection {
+    background-color: var(--color-primary);
+    color: var(--color-obsidian);
+  }
+
+  :focus-visible {
+    outline: 2px solid var(--color-primary);
+    outline-offset: 2px;
+  }
+
+  /* The sticky header should not cover anchored sections. */
+  [id] {
+    scroll-margin-top: calc(var(--nav-height) + 1.5rem);
+  }
+
+  input[type="text"],
+  input[type="email"] {
+    font-family: var(--font-sans);
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    html {
+      scroll-behavior: auto;
+    }
+
+    *,
+    *::before,
+    *::after {
+      animation-duration: 0.001ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.001ms !important;
+      scroll-behavior: auto !important;
+    }
+  }
+}
+
+/* ==========================================================================
+   Layout and shared components
+   ========================================================================== */
+@layer components {
+  .shell {
+    width: 100%;
+    max-width: var(--shell-max);
+    margin-inline: auto;
+    padding-inline: var(--shell-gutter);
+  }
+
+  .section {
+    position: relative;
+    padding-block: clamp(4.25rem, 8.5vw, 8.5rem);
+  }
+
+  /* Monospace technical label used for annotations and telemetry. */
+  .label-mono {
+    font-family: var(--font-mono);
+    font-size: 0.6875rem;
+    line-height: 1.2;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+  }
+
+  .label-mono-sm {
+    font-family: var(--font-mono);
+    font-size: 0.625rem;
+    line-height: 1.2;
+    letter-spacing: 0.16em;
+    text-transform: uppercase;
+  }
+
+  /* Fine engineering grid used behind dark sections. */
+  .grid-backdrop {
+    background-image:
+      linear-gradient(to right, rgb(48 52 42 / 0.55) 1px, transparent 1px),
+      linear-gradient(to bottom, rgb(48 52 42 / 0.55) 1px, transparent 1px);
+    background-size: 72px 72px;
+  }
+
+  .grid-backdrop-fine {
+    background-image:
+      linear-gradient(to right, rgb(48 52 42 / 0.4) 1px, transparent 1px),
+      linear-gradient(to bottom, rgb(48 52 42 / 0.4) 1px, transparent 1px);
+    background-size: 28px 28px;
+  }
+
+  /* Circuit-trace texture used by panels and the survey backdrop. */
+  .trace-backdrop {
+    background-image:
+      radial-gradient(circle at 1px 1px, rgb(245 230 66 / 0.16) 1px, transparent 0),
+      linear-gradient(to right, rgb(48 52 42 / 0.5) 1px, transparent 1px);
+    background-size:
+      24px 24px,
+      192px 192px;
+  }
+
+  .panel {
+    border: 1px solid var(--color-line);
+    background-color: var(--color-surface);
+  }
+
+  .panel-alt {
+    border: 1px solid var(--color-line);
+    background-color: var(--color-surface-alt);
+  }
+
+  /* Angled corner cut, echoing GPU shroud geometry. */
+  .clip-corner {
+    clip-path: polygon(0 0, calc(100% - 18px) 0, 100% 18px, 100% 100%, 18px 100%, 0 calc(100% - 18px));
+  }
+
+  .clip-corner-sm {
+    clip-path: polygon(0 0, calc(100% - 10px) 0, 100% 10px, 100% 100%, 10px 100%, 0 calc(100% - 10px));
+  }
+
+  .hairline-top {
+    border-top: 1px solid var(--color-line);
+  }
+
+  .scanline {
+    position: absolute;
+    inset-inline: 0;
+    height: 22%;
+    background: linear-gradient(
+      to bottom,
+      transparent,
+      rgb(245 230 66 / 0.07) 45%,
+      rgb(255 242 122 / 0.16) 50%,
+      rgb(245 230 66 / 0.07) 55%,
+      transparent
+    );
+    animation: var(--animate-scanline);
+    pointer-events: none;
+  }
+
+  .die-texture {
+    background-image:
+      linear-gradient(115deg, rgb(245 230 66 / 0.09) 0 2px, transparent 2px 100%),
+      linear-gradient(25deg, rgb(245 230 66 / 0.07) 0 1px, transparent 1px 100%);
+    background-size:
+      34px 34px,
+      22px 22px;
+  }
+
+  /* Yellow "chip" motif used for list bullets and step markers. */
+  .die-dot {
+    width: 0.5rem;
+    height: 0.5rem;
+    background-color: var(--color-primary);
+    clip-path: polygon(50% 0, 100% 50%, 50% 100%, 0 50%);
+    flex: none;
+  }
+
+  .link-underline {
+    background-image: linear-gradient(var(--color-primary), var(--color-primary));
+    background-repeat: no-repeat;
+    background-position: 0 100%;
+    background-size: 0% 1px;
+    transition: background-size 240ms cubic-bezier(0.22, 1, 0.36, 1);
+  }
+
+  .link-underline:hover,
+  .link-underline:focus-visible {
+    background-size: 100% 1px;
+  }
+}
+
+@layer utilities {
+  .text-balance {
+    text-wrap: balance;
+  }
+
+  .stack-mask {
+    mask-image: linear-gradient(to right, transparent, black 8%, black 92%, transparent);
+  }
+
+  .surface-gradient {
+    background-image: linear-gradient(180deg, rgb(25 28 24 / 0.9), rgb(9 10 9 / 0.95));
+  }
+}
