@@ -2,6 +2,8 @@ import { readFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 import { describe, expect, it } from "vitest";
 import { optionIds, type QuestionKey } from "@/lib/survey/questions";
+import { wishlistSubmissionSchema } from "@/lib/validation/wishlist";
+import { validYesPayload } from "./fixtures";
 
 /**
  * Static parity between the SQL migration, the survey configuration and the
@@ -70,6 +72,27 @@ describe("SQL migration parity with the survey configuration", () => {
   });
 });
 
+describe("SQL migration columns", () => {
+  const tableBlock = (() => {
+    const match = sql.match(
+      /create table if not exists public\.wishlist_applications \(([\s\S]*?)\n\);/,
+    );
+    return match?.[1] ?? "";
+  })();
+
+  it("declares every column produced by the submission transform", () => {
+    expect(tableBlock.length, "CREATE TABLE block not found").toBeGreaterThan(0);
+
+    const row = wishlistSubmissionSchema.parse(validYesPayload());
+    for (const column of Object.keys(row)) {
+      expect(
+        tableBlock,
+        `column "${column}" is written by the app but missing from CREATE TABLE`,
+      ).toMatch(new RegExp(`(?:^|\\n)\\s*${column}\\s`, "m"));
+    }
+  });
+});
+
 describe("database security posture", () => {
   it("enables row level security", () => {
     expect(sql).toMatch(/alter table public\.wishlist_applications enable row level security/i);
@@ -89,10 +112,18 @@ describe("database security posture", () => {
     expect(sql).toMatch(/grant all on table public\.wishlist_applications to service_role/i);
   });
 
+  it("enforces one application per email address", () => {
+    expect(sql).toMatch(
+      /create unique index if not exists wishlist_email_unique_idx\s+on public\.wishlist_applications \(email\)/i,
+    );
+    expect(sql).toContain("duplicate email address(es)");
+    expect(sql).not.toMatch(/repeat registrations are allowed/i);
+  });
+
   it("indexes the fields used for administrative filtering", () => {
     for (const index of [
       "wishlist_created_at_idx",
-      "wishlist_email_idx",
+      "wishlist_email_unique_idx",
       "wishlist_user_type_idx",
       "wishlist_usage_frequency_idx",
       "wishlist_monthly_compute_budget_idx",

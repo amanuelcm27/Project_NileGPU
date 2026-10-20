@@ -1,5 +1,5 @@
 -- ============================================================================
--- NileGPU — wishlist applications
+-- WaliaGPU — wishlist applications
 -- Migration 0001
 --
 -- Run this in the Supabase SQL editor (or with `supabase db push`) before
@@ -29,6 +29,7 @@ create table if not exists public.wishlist_applications (
   adoption_barriers text[] not null default '{}',
   adoption_barriers_other text,
   current_compute_solution text not null,
+  current_compute_solution_other text,
   etb_payment_preference text not null,
   monthly_compute_budget text not null,
   early_access_intent text not null,
@@ -36,8 +37,13 @@ create table if not exists public.wishlist_applications (
   updated_at timestamptz not null default now()
 );
 
+-- Defensive: keep re-runs working on projects created by an earlier revision of
+-- this migration, where a column may be missing from the CREATE TABLE above.
+alter table public.wishlist_applications
+  add column if not exists current_compute_solution_other text;
+
 comment on table public.wishlist_applications is
-  'Completed NileGPU wishlist applications. One row per submitted application; repeat registrations are allowed by design during demand validation.';
+  'Completed WaliaGPU wishlist applications. One row per email address; duplicate registrations are rejected.';
 comment on column public.wishlist_applications.gpu_workloads is
   'Array of workload enum values. The survey collects a single workload today, so the array holds one element.';
 comment on column public.wishlist_applications.providers_used is
@@ -114,7 +120,34 @@ alter table public.wishlist_applications
 -- Indexes for administrative analysis
 -- ----------------------------------------------------------------------------
 create index if not exists wishlist_created_at_idx on public.wishlist_applications (created_at desc);
-create index if not exists wishlist_email_idx on public.wishlist_applications (lower(email));
+
+-- One application per email address. Email is normalised by the API and by the
+-- `wishlist_email_normalised` check above, so a plain unique index is enough.
+-- If this database already contains duplicates, stop with a clear message
+-- rather than deleting applicant data silently.
+do $$
+declare
+  duplicate_emails bigint;
+begin
+  select count(*) into duplicate_emails
+  from (
+    select email
+    from public.wishlist_applications
+    group by email
+    having count(*) > 1
+  ) duplicates;
+
+  if duplicate_emails > 0 then
+    raise exception
+      'Cannot enforce one application per email: % duplicate email address(es) already exist. Resolve them, then re-run this migration.',
+      duplicate_emails;
+  end if;
+end $$;
+
+drop index if exists public.wishlist_email_idx;
+create unique index if not exists wishlist_email_unique_idx
+  on public.wishlist_applications (email);
+
 create index if not exists wishlist_user_type_idx on public.wishlist_applications (user_type);
 create index if not exists wishlist_used_gpu_cloud_idx on public.wishlist_applications (used_gpu_cloud);
 create index if not exists wishlist_vram_requirement_idx on public.wishlist_applications (vram_requirement);
@@ -127,7 +160,7 @@ create index if not exists wishlist_etb_payment_preference_idx on public.wishlis
 -- ----------------------------------------------------------------------------
 -- updated_at maintenance
 -- ----------------------------------------------------------------------------
-create or replace function public.nilegpu_touch_updated_at()
+create or replace function public.waliagpu_touch_updated_at()
 returns trigger
 language plpgsql
 as $$
@@ -141,7 +174,7 @@ drop trigger if exists wishlist_applications_touch_updated_at on public.wishlist
 create trigger wishlist_applications_touch_updated_at
   before update on public.wishlist_applications
   for each row
-  execute function public.nilegpu_touch_updated_at();
+  execute function public.waliagpu_touch_updated_at();
 
 -- ----------------------------------------------------------------------------
 -- Row Level Security

@@ -1,6 +1,6 @@
-# NileGPU — Wishlist & Demand-Validation Platform
+# WaliaGPU — Wishlist & Demand-Validation Platform
 
-A production-quality Next.js site for **NileGPU**, a proposed Ethiopian GPU cloud
+A production-quality Next.js site for **WaliaGPU**, a proposed Ethiopian GPU cloud
 service. It is a *demand-validation* tool, not a storefront: there is no pricing,
 no capacity for sale, and no fabricated usage statistics anywhere on the site.
 
@@ -9,10 +9,10 @@ The app has two jobs:
 1. **Explain the proposition** through a single landing page with distinct,
    purpose-built sections.
 2. **Collect a structured wishlist application** through a one-question-at-a-time
-   survey with conditional branching, then persist exactly one row per completed
-   submission to Supabase.
+   survey with conditional branching, then persist one row per email address to
+   Supabase. Repeat submissions from the same address are rejected.
 
-> **Honesty by design.** The confirmation screen only appears after the server
+> **Honesty by design.** The confirmation dialog only appears after the server
 > confirms the row was written. If storage is not configured or the insert fails,
 > the applicant sees a real error with a retry action and **their answers are kept**.
 
@@ -89,7 +89,7 @@ keys.**
 | `NEXT_PUBLIC_SUPABASE_ANON_KEY` | Yes\*    | Client+SRV  | Public anon key. Currently unused by the frontend (anonymous DB access is denied) but part of a complete Supabase setup. |
 | `SUPABASE_SERVICE_ROLE_KEY`     | Yes\*    | **Server**  | Insert key used by `POST /api/wishlist`. Never expose to the browser.                      |
 | `NEXT_PUBLIC_SITE_URL`          | No       | Client+SRV  | Absolute site URL for canonical links, sitemap and OG metadata. Falls back to the Vercel URL, then `http://localhost:3000`. |
-| `NEXT_PUBLIC_CONTACT_EMAIL`     | No       | Client      | Public contact address in the footer and privacy notice. Defaults to `wishlist@nilegpu.com`. |
+| `NEXT_PUBLIC_CONTACT_EMAIL`     | No       | Client      | Public contact address in the footer and privacy notice. Defaults to `wishlist@waliagpu.com`. |
 | `NEXT_PUBLIC_ANALYTICS_ENDPOINT`| No       | Client      | Optional analytics sink. Empty disables forwarding.                                       |
 | `UPSTASH_REDIS_REST_URL`        | No       | **Server**  | Distributed rate limiting (Upstash REST).                                                |
 | `UPSTASH_REDIS_REST_TOKEN`      | No       | **Server**  | Distributed rate limiting (Upstash REST).                                                |
@@ -125,6 +125,8 @@ The migration creates `public.wishlist_applications` with:
   `providers_used` and `previous_service_problems` arrays must be non-empty and
   `adoption_barriers` must be empty, and vice versa;
 - an email normalisation constraint (`email = lower(btrim(email))`);
+- a **unique email index** — one application per address; the API returns `409`
+  with a field-level message instead of creating a duplicate;
 - indexes for administrative analysis (including a GIN index on `gpu_workloads`);
 - an `updated_at` trigger;
 - **RLS enabled with no policies for `anon`/`authenticated`** (default-deny), and
@@ -132,6 +134,11 @@ The migration creates `public.wishlist_applications` with:
   (which has `BYPASSRLS`) can read or write.
 
 All writes go through the server route handler using the service-role key.
+
+> **Existing project?** Re-run the migration after pulling this change to add the
+> unique email index. If the table already contains duplicate addresses, the
+> migration stops with a clear message instead of deleting applicant data; resolve
+> those rows first, then re-run it.
 
 ---
 
@@ -213,6 +220,7 @@ Failure shape:
 |    405 | `method_not_allowed`     | Anything other than `POST`.                                          |
 |    413 | `payload_too_large`      | Body exceeded 16 KB.                                                 |
 |    415 | `unsupported_media_type` | Missing/incorrect `Content-Type`.                                    |
+|    409 | `duplicate_email`        | That email address already has an application (`fieldErrors.email`). |
 |    422 | `validation_failed`      | Zod validation or conditional-logic check failed (`fieldErrors` map).|
 |    429 | `rate_limited`           | Too many submissions from this connection (`Retry-After` set).       |
 |    500 | `storage_error`          | The database rejected or failed the insert.                          |
@@ -275,7 +283,7 @@ components/
   sections/             Hero, Workloads, HowItWorks, LocalAccess,
                         SurveySection, FinalCta, Footer
   survey/               SurveyApp + step components (Identity, Question,
-                        Interstitial, Review, Success, ProgressRail)
+                        Interstitial, Review, SuccessDialog, ProgressRail)
   ui/                   Button, Reveal, Primitives, TrackedCtaLink, DrawRule
   visuals/              GpuVisual (lazy 3D), GpuSchematic (SVG base/fallback),
                         GpuScene (interactive card), WorkloadGlyph
@@ -319,9 +327,9 @@ tests/                  Vitest suites (flow, validation, endpoint, schema parity
 - **Abuse controls:** 16 KB request cap, JSON content-type check, honeypot field,
   a minimum completion time, and rate limiting.
 - **Privacy notice** at `/privacy`, linked from the footer. Identity (name/email)
-  is never stored on its own — only as part of a complete application. Duplicate
-  registrations from the same email are allowed by design (demand validation) and
-  are not deduplicated.
+  is never stored on its own — only as part of a complete application. Each email
+  address can submit once; duplicates are rejected by the API and blocked by a
+  unique database index.
 
 ---
 
@@ -345,7 +353,7 @@ the limiter key.
 `lib/analytics` is a tiny, typed abstraction with no third-party dependency.
 Events (`hero_cta_clicked`, `survey_started`, `survey_completed`,
 `wishlist_submitted`, `survey_abandoned`) are pushed to a bounded in-memory buffer
-(`window.__nilegpuAnalytics`) and — if `NEXT_PUBLIC_ANALYTICS_ENDPOINT` is set —
+(`window.__waliagpuAnalytics`) and — if `NEXT_PUBLIC_ANALYTICS_ENDPOINT` is set —
 forwarded with `navigator.sendBeacon`. Props are restricted to non-identifying
 values and scrubbed before leaving the browser; abandon events report only the
 *shape* of progress (last step, counts, percent) and never answers.
@@ -397,8 +405,9 @@ in the Supabase dashboard / SQL editor.
 
 **Verified locally (no credentials required):**
 
-- `npm run lint`, `npm run typecheck`, `npm test` (56 tests across survey flow,
-  validation, the API endpoint, and SQL↔config schema parity) all pass.
+- `npm run lint`, `npm run typecheck`, `npm test` (72 tests across survey flow,
+  validation, the API endpoint, the submission client, and SQL↔config schema
+  parity) all pass.
 - `npm run build` succeeds. Routes produced: `/` (static), `/privacy`,
   `/api/wishlist` (dynamic), `/icon.svg`, `/opengraph-image`, `/twitter-image`,
   `/robots.txt`, `/sitemap.xml`.
@@ -424,11 +433,14 @@ in the Supabase dashboard / SQL editor.
 - No console warnings or errors during navigation and interaction.
 - The service-role key does not appear in any client bundle.
 
-**Requires Supabase credentials (not yet verified here):**
+**Verified against a live Supabase project:**
 
-- A real insert into `wishlist_applications`, the `201` response, and the
-  success screen. To verify: configure the Supabase variables, run the migration,
-  and complete the survey once.
+- A real submission returned `201`, and the row was read back from
+  `wishlist_applications`.
+- Submitting the same address again (with different casing) returned
+  `409 duplicate_email` with a field-level message, and exactly one row existed.
+- The test row was removed after verification.
+- The service-role key is server-only; it is absent from `.next/static`.
 
 ---
 
@@ -438,4 +450,5 @@ in the Supabase dashboard / SQL editor.
 - `NEXT_PUBLIC_CONTACT_EMAIL` ships with a placeholder and must be set by the
   founder before launch.
 - There is no admin UI; analysis happens in Supabase.
-- Duplicate emails are intentionally allowed and are not deduplicated.
+- There is no self-service way to change the email on an existing application;
+  contact the founder if an applicant needs that.

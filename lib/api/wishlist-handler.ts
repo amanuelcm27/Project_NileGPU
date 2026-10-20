@@ -46,6 +46,17 @@ export function failure(
   return json({ ok: false, error: { code, message, ...extra } }, status, headers);
 }
 
+const DUPLICATE_EMAIL_MESSAGE =
+  "An application with this email address has already been submitted. Use a different email address, or contact us if you need to update your application.";
+const DUPLICATE_EMAIL_FIELD_MESSAGE = "This email address has already been submitted.";
+
+function duplicateEmailFailure(requestId: string) {
+  return failure("duplicate_email", DUPLICATE_EMAIL_MESSAGE, 409, {
+    fieldErrors: { email: DUPLICATE_EMAIL_FIELD_MESSAGE },
+    requestId,
+  });
+}
+
 export async function handleWishlistPost(request: Request): Promise<Response> {
   const requestId = crypto.randomUUID();
 
@@ -97,12 +108,12 @@ export async function handleWishlistPost(request: Request): Promise<Response> {
   const abuse = readAbuseSignals(parsedBody);
 
   if (abuse.honeypot && abuse.honeypot.trim().length > 0) {
-    console.warn(`[nilegpu] wishlist: honeypot triggered (request ${requestId})`);
+    console.warn(`[waliagpu] wishlist: honeypot triggered (request ${requestId})`);
     return failure("rejected", "We could not process that submission.", 400, { requestId });
   }
 
   if (typeof abuse.elapsedMs === "number" && abuse.elapsedMs < limits.minElapsedMs) {
-    console.warn(`[nilegpu] wishlist: implausibly fast submission (request ${requestId})`);
+    console.warn(`[waliagpu] wishlist: implausibly fast submission (request ${requestId})`);
     return failure("rejected", "We could not process that submission.", 400, { requestId });
   }
 
@@ -126,6 +137,31 @@ export async function handleWishlistPost(request: Request): Promise<Response> {
     return failure("service_unconfigured", supabase.message, 503, { requestId });
   }
 
+  // Give repeat applicants a clear, field-level message before attempting the
+  // insert. The unique index is still the authoritative guard against races.
+  const { data: existing, error: lookupError } = await supabase.client
+    .from(WISHLIST_TABLE)
+    .select("id")
+    .eq("email", row.email)
+    .maybeSingle();
+
+  if (lookupError) {
+    console.error(
+      `[waliagpu] wishlist email lookup failed (request ${requestId}): code=${lookupError.code ?? "unknown"} message=${lookupError.message}`,
+    );
+    return failure(
+      "storage_error",
+      "We could not save your application right now. Your answers are still here — please try again.",
+      500,
+      { requestId },
+    );
+  }
+
+  if (existing) {
+    console.warn(`[waliagpu] wishlist duplicate email rejected (request ${requestId})`);
+    return duplicateEmailFailure(requestId);
+  }
+
   const { data, error } = await supabase.client
     .from(WISHLIST_TABLE)
     .insert(row)
@@ -134,8 +170,14 @@ export async function handleWishlistPost(request: Request): Promise<Response> {
 
   if (error) {
     console.error(
-      `[nilegpu] wishlist insert failed (request ${requestId}): code=${error.code ?? "unknown"} message=${error.message}`,
+      `[waliagpu] wishlist insert failed (request ${requestId}): code=${error.code ?? "unknown"} message=${error.message}`,
     );
+
+    // Another request inserted the same address between the lookup and insert.
+    if (error.code === "23505") {
+      return duplicateEmailFailure(requestId);
+    }
+
     const schemaNotReady = error.code === "42P01" || error.code === "PGRST205";
     return failure(
       "storage_error",
@@ -148,7 +190,7 @@ export async function handleWishlistPost(request: Request): Promise<Response> {
   }
 
   if (!data || typeof data.id !== "string") {
-    console.error(`[nilegpu] wishlist insert returned no id (request ${requestId})`);
+    console.error(`[waliagpu] wishlist insert returned no id (request ${requestId})`);
     return failure(
       "storage_error",
       "We could not confirm that your application was saved. Please try again.",

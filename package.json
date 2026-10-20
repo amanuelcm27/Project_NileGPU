@@ -1,8 +1,8 @@
 {
-  "name": "nilegpu",
+  "name": "waliagpu",
   "version": "1.0.0",
   "private": true,
-  "description": "NileGPU — Ethiopia's GPU cloud. Wishlist and demand validation platform.",
+  "description": "WaliaGPU — Ethiopia's GPU cloud. Wishlist and demand validation platform.",
   "scripts": {
     "dev": "next dev",
     "build": "next build",

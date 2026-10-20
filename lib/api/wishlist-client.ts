@@ -7,6 +7,8 @@ export type SubmitResult =
 
 const GENERIC_MESSAGE =
   "We could not save your application right now. Your answers are still here — please try again.";
+const UNAVAILABLE_MESSAGE =
+  "Wishlist applications are temporarily unavailable. Your answers are still here, so please try again later.";
 
 interface ApiErrorBody {
   ok?: boolean;
@@ -23,6 +25,31 @@ interface ApiErrorBody {
 interface ApiSuccessBody {
   ok: true;
   application?: { id?: string };
+}
+
+/**
+ * Field errors come from our own Zod schema, but the response could in theory be
+ * produced by a proxy or hosting layer. Accept only a plain object of short
+ * strings so nothing unusual can reach the UI.
+ */
+function readFieldErrors(value: unknown): Record<string, string> | undefined {
+  if (!value || typeof value !== "object" || Array.isArray(value)) return undefined;
+
+  const entries = Object.entries(value as Record<string, unknown>).flatMap(([field, message]) => {
+    if (typeof message !== "string") return [];
+    const trimmed = message.trim();
+    if (field.length === 0 || field.length > 64 || trimmed.length === 0 || trimmed.length > 300) {
+      return [];
+    }
+    return [[field, trimmed] as const];
+  });
+
+  return entries.length > 0 ? Object.fromEntries(entries) : undefined;
+}
+
+/** Only display a short, opaque support reference. */
+function readRequestId(value: unknown): string | undefined {
+  return typeof value === "string" && /^[A-Za-z0-9_-]{8,64}$/.test(value) ? value : undefined;
 }
 
 /**
@@ -63,16 +90,35 @@ export async function submitWishlist(
       return { ok: true, applicationId: success.application?.id ?? null };
     }
 
-    if (response.status === 422 && body?.error?.fieldErrors) {
+    if (response.status === 409) {
       return {
         ok: false,
         error: {
-          code: body.error.code ?? "validation_failed",
-          message: body.error.message ?? "Some answers were rejected. Please review them.",
-          fieldErrors: body.error.fieldErrors,
-          requestId: body.error.requestId,
+          code: "duplicate_email",
+          message:
+            "An application with this email address has already been submitted. Use a different email address, or contact us if you need to update your application.",
+          fieldErrors: readFieldErrors(body?.error?.fieldErrors) ?? {
+            email: "This email address has already been submitted.",
+          },
+          requestId: readRequestId(body?.error?.requestId),
         },
       };
+    }
+
+    if (response.status === 422) {
+      const fieldErrors = readFieldErrors(body?.error?.fieldErrors);
+      if (fieldErrors) {
+        return {
+          ok: false,
+          error: {
+            code: "validation_failed",
+            message:
+              "Some answers need another look. Please review the highlighted questions and try again.",
+            fieldErrors,
+            requestId: readRequestId(body?.error?.requestId),
+          },
+        };
+      }
     }
 
     if (response.status === 429) {
@@ -81,9 +127,10 @@ export async function submitWishlist(
         ok: false,
         error: {
           code: "rate_limited",
-          message: retryAfter
-            ? `Too many submissions from this connection. Please try again in about ${Math.ceil(retryAfter / 60)} minute(s).`
-            : "Too many submissions from this connection. Please try again later.",
+          message:
+            typeof retryAfter === "number" && retryAfter > 0
+              ? `Too many submissions from this connection. Please try again in about ${Math.ceil(retryAfter / 60)} minute(s).`
+              : "Too many submissions from this connection. Please try again later.",
         },
       };
     }
@@ -92,21 +139,22 @@ export async function submitWishlist(
       return {
         ok: false,
         error: {
-          code: body?.error?.code ?? "service_unconfigured",
-          message:
-            body?.error?.message ??
-            "Wishlist storage is not configured on this deployment yet, so your application was not saved.",
-          requestId: body?.error?.requestId,
+          code: "service_unavailable",
+          message: UNAVAILABLE_MESSAGE,
+          requestId: readRequestId(body?.error?.requestId),
         },
       };
     }
 
+    // Anything else is treated as an unspecified server failure. Deliberately do
+    // not echo the response body or error code: a proxy, hosting platform or
+    // database driver could put SQL, stack traces or infrastructure details in it.
     return {
       ok: false,
       error: {
-        code: body?.error?.code ?? "server_error",
-        message: body?.error?.message ?? GENERIC_MESSAGE,
-        requestId: body?.error?.requestId,
+        code: "server_error",
+        message: GENERIC_MESSAGE,
+        requestId: readRequestId(body?.error?.requestId),
       },
     };
   } catch (error) {

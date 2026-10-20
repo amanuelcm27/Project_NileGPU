@@ -34,7 +34,7 @@ export function getSupabaseAdmin(): SupabaseAdmin {
   const status = readSupabaseEnv();
   if (!status.configured) {
     console.warn(
-      `[nilegpu] Supabase is not configured. Missing: ${status.missing.join(", ") || "none"}; invalid: ${status.invalid.join(", ") || "none"}. Wishlist submissions will be rejected rather than silently dropped.`,
+      `[waliagpu] Supabase is not configured. Missing: ${status.missing.join(", ") || "none"}; invalid: ${status.invalid.join(", ") || "none"}. Wishlist submissions will be rejected rather than silently dropped.`,
     );
     return {
       available: false,
@@ -47,13 +47,13 @@ export function getSupabaseAdmin(): SupabaseAdmin {
   }
 
   for (const warning of status.warnings) {
-    console.warn(`[nilegpu] ${warning}`);
+    console.warn(`[waliagpu] ${warning}`);
   }
 
   if (!cached) {
     cached = createClient(status.env.NEXT_PUBLIC_SUPABASE_URL, status.env.SUPABASE_SERVICE_ROLE_KEY, {
       auth: { persistSession: false, autoRefreshToken: false, detectSessionInUrl: false },
-      global: { headers: { "x-application-name": "nilegpu-wishlist" } },
+      global: { headers: { "x-application-name": "waliagpu-wishlist" } },
     });
   }
 

@@ -1,13 +1,13 @@
 "use client";
 
 import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { IdentityStep } from "@/components/survey/IdentityStep";
 import { InterstitialStep } from "@/components/survey/InterstitialStep";
 import { ProgressRail } from "@/components/survey/ProgressRail";
 import { QuestionStep } from "@/components/survey/QuestionStep";
 import { ReviewStep } from "@/components/survey/ReviewStep";
-import { SuccessScreen } from "@/components/survey/SuccessScreen";
+import { SuccessDialog } from "@/components/survey/SuccessDialog";
 import { submitWishlist } from "@/lib/api/wishlist-client";
 import { track } from "@/lib/analytics";
 import {
@@ -46,7 +46,6 @@ export function SurveyApp() {
   const [serverFieldErrors, setServerFieldErrors] = useState<Record<string, string>>({});
   const [status, setStatus] = useState<SubmissionStatus>("idle");
   const [submitError, setSubmitError] = useState<SubmissionError | null>(null);
-  const [applicationId, setApplicationId] = useState<string | null>(null);
   const [honeypot, setHoneypot] = useState("");
 
   const reduceMotion = useReducedMotion();
@@ -56,6 +55,10 @@ export function SurveyApp() {
   const startedRef = useRef(false);
   const abandonedRef = useRef(false);
   const startedAtRef = useRef<number | null>(null);
+
+  const closeSuccess = useCallback(() => {
+    window.location.reload();
+  }, []);
 
   const progress = useMemo(() => buildProgress(state, currentStepId), [state, currentStepId]);
   const steps = progress.steps;
@@ -94,6 +97,28 @@ export function SurveyApp() {
   const setAnswer = (key: AnswerKey, value: string | string[]) => {
     setState((previous) => ({ ...previous, answers: { ...previous.answers, [key]: value } }));
     setStepError(null);
+    setSubmitError(null);
+    setServerFieldErrors((previous) => {
+      if (!previous[key]) return previous;
+      const next = { ...previous };
+      delete next[key];
+      return next;
+    });
+  };
+
+  const setIdentityField = (key: keyof ApplicantIdentity, value: string) => {
+    setState((previous) => ({
+      ...previous,
+      identity: { ...previous.identity, [key]: value },
+    }));
+    setStepError(null);
+    setSubmitError(null);
+    setIdentityErrors((previous) => {
+      if (!previous[key]) return previous;
+      const next = { ...previous };
+      delete next[key];
+      return next;
+    });
     setServerFieldErrors((previous) => {
       if (!previous[key]) return previous;
       const next = { ...previous };
@@ -188,6 +213,7 @@ export function SurveyApp() {
         fieldErrors,
       });
       if (target && steps.includes(target)) {
+        if (target === "identity") setIdentityErrors(fieldErrors);
         goTo(target);
         setStepError((firstField && fieldErrors[firstField]) || "Please review this answer.");
       }
@@ -205,7 +231,6 @@ export function SurveyApp() {
 
     if (result.ok) {
       submittedRef.current = true;
-      setApplicationId(result.applicationId);
       setStatus("success");
       track("wishlist_submitted", { stepId: "review" });
       return;
@@ -218,6 +243,9 @@ export function SurveyApp() {
     const failedField = result.error.fieldErrors ? Object.keys(result.error.fieldErrors)[0] : undefined;
     const target = failedField ? stepForField[failedField] : undefined;
     if (target && steps.includes(target)) {
+      if (target === "identity" && result.error.fieldErrors) {
+        setIdentityErrors(result.error.fieldErrors);
+      }
       goTo(target);
       setStepError((failedField && result.error.fieldErrors?.[failedField]) || result.error.message);
     }
@@ -225,16 +253,8 @@ export function SurveyApp() {
 
   if (status === "success") {
     return (
-      <div
-        ref={containerRef}
-        className="panel clip-corner overflow-hidden bg-surface"
-        aria-live="polite"
-      >
-        <div className="flex items-center justify-between border-b border-line px-4 py-3 sm:px-6">
-          <span className="label-mono-sm text-muted">WISHLIST APPLICATION</span>
-          <span className="label-mono-sm text-primary">PERSISTED</span>
-        </div>
-        <SuccessScreen applicationId={applicationId} />
+      <div className="min-h-[26rem]">
+        <SuccessDialog onClose={closeSuccess} />
       </div>
     );
   }
@@ -246,7 +266,7 @@ export function SurveyApp() {
   return (
     <div ref={containerRef} className="panel clip-corner overflow-hidden bg-surface">
       <div className="flex items-center justify-between border-b border-line bg-surface-alt/60 px-4 py-2.5 sm:px-6">
-        <span className="label-mono-sm text-ink">NILEGPU · WISHLIST APPLICATION</span>
+        <span className="label-mono-sm text-ink">WALIAGPU · WISHLIST APPLICATION</span>
       </div>
 
       <ProgressRail progress={progress} />
@@ -264,12 +284,7 @@ export function SurveyApp() {
               <IdentityStep
                 values={state.identity}
                 errors={identityErrors}
-                onChange={(key: keyof ApplicantIdentity, value: string) =>
-                  setState((previous) => ({
-                    ...previous,
-                    identity: { ...previous.identity, [key]: value },
-                  }))
-                }
+                onChange={setIdentityField}
                 onSubmit={submitIdentity}
               />
             ) : null}

@@ -28,7 +28,7 @@ export function FinalCta() {
         aria-hidden
         className="pointer-events-none absolute inset-x-0 top-1/2 -translate-y-1/2 select-none text-center font-display text-[22vw] font-bold leading-none text-ink/[0.03]"
       >
-        NILEGPU
+        WALIAGPU
       </span>
 
       <div className="shell relative">

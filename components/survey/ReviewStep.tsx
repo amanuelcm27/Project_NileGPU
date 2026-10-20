@@ -119,9 +119,9 @@ export function ReviewStep({
           <p className="mt-2 text-[0.9rem] leading-relaxed text-ink">{error.message}</p>
           {error.fieldErrors ? (
             <ul className="mt-3 space-y-1">
-              {Object.entries(error.fieldErrors).map(([field, message]) => (
-                <li key={field} className="font-mono text-[0.72rem] text-danger">
-                  {field}: {message}
+              {[...new Set(Object.values(error.fieldErrors))].map((message) => (
+                <li key={message} className="font-mono text-[0.72rem] text-danger">
+                  {message}
                 </li>
               ))}
             </ul>

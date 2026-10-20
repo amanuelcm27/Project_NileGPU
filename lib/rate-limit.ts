@@ -139,10 +139,10 @@ export async function checkRateLimit(
   if (!config) return memoryLimit(key, options);
 
   try {
-    return await upstashLimit(`nilegpu:rl:${key}`, options, config);
+    return await upstashLimit(`waliagpu:rl:${key}`, options, config);
   } catch (error) {
     console.warn(
-      `[nilegpu] Distributed rate limiter unavailable, falling back to per-instance limit: ${
+      `[waliagpu] Distributed rate limiter unavailable, falling back to per-instance limit: ${
         error instanceof Error ? error.message : "unknown error"
       }`,
     );
