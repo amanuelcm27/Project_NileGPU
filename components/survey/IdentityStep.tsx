@@ -29,7 +29,6 @@ export function IdentityStep({ values, errors, onChange, onSubmit }: IdentitySte
     >
       <div className="flex items-center justify-between gap-4">
         <span className="label-mono text-primary">STEP 01 / APPLICANT</span>
-        <span className="label-mono-sm text-muted">TWO FIELDS ONLY</span>
       </div>
 
       <h3 className="mt-5 font-display text-[clamp(1.4rem,3.4vw,2rem)] leading-tight text-ink">
@@ -48,7 +47,6 @@ export function IdentityStep({ values, errors, onChange, onSubmit }: IdentitySte
           value={values.fullName ?? ""}
           error={errors.fullName}
           onChange={(value) => onChange("fullName", value)}
-          placeholder="Hanna Bekele"
         />
         <Field
           id="applicant-email"

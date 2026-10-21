@@ -2,7 +2,6 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { ArrowLeft } from "lucide-react";
 import { Footer } from "@/components/sections/Footer";
-import { Eyebrow } from "@/components/ui/Primitives";
 import { brand } from "@/lib/config/brand";
 import { contactHref } from "@/lib/config/navigation";
 
@@ -16,7 +15,7 @@ const sections = [
   {
     heading: "What we collect",
     body: [
-      "When you complete the wishlist survey we store: your full name, your email address, and the answers you give about your intended workload — user type, GPU workload, required memory capacity, usage frequency, prior GPU cloud experience (including providers used or barriers to adoption), your current workaround for compute needs, whether paying in Ethiopian birr would help, your realistic monthly budget, and whether you would try the service.",
+      "When you complete the wishlist survey we store: your full name, your email address, and the answers you give about your intended workload. That includes user type, GPU workload, required memory capacity, usage frequency, prior GPU cloud experience (including providers used or barriers to adoption), your current workaround for compute needs, whether paying in Ethiopian birr would help, your realistic monthly budget, and whether you would try the service.",
       "We do not ask for phone numbers, company revenue figures, payment details, national identifiers or any other unrelated personal information.",
     ],
   },
@@ -39,15 +38,8 @@ const sections = [
     body: [
       "Your information is never displayed publicly. There is no public list of applicants, no public dashboard, and no public endpoint that exposes wishlist records.",
       "We do not sell or rent your information.",
-      "We do not send personally identifiable information to analytics tools. The analytics hooks in this site record anonymous product events only — for example that a call to action was clicked, or that a survey was started or abandoned, and how far the applicant got. Answers, names and email addresses are never included.",
+      "We do not send personally identifiable information to analytics tools. The analytics hooks in this site record anonymous product events only, such as a call to action being clicked, or a survey being started or abandoned, and how far the applicant got. Answers, names and email addresses are never included.",
       "This website has no third-party analytics provider, advertising pixel or social media tracker enabled by default.",
-    ],
-  },
-  {
-    heading: "Where your information is stored",
-    body: [
-      "Applications are stored in a managed PostgreSQL database (Supabase). Access is restricted: the database denies anonymous access entirely, and records are only readable by the private server credentials and the project owner.",
-      "The site is served over HTTPS in production, and the credentials that can write to the database are never included in the browser code.",
     ],
   },
   {
@@ -66,7 +58,7 @@ const sections = [
   {
     heading: "Changes to this notice",
     body: [
-      "If this notice changes materially — for example when early access becomes a paid service — we will update this page and, where appropriate, contact registered applicants by email.",
+      "If this notice changes materially, for example when early access becomes a paid service, we will update this page and, where appropriate, contact registered applicants by email.",
     ],
   },
 ] as const;
@@ -85,8 +77,7 @@ export default function PrivacyPage() {
             Back to {brand.name}
           </Link>
 
-          <Eyebrow className="mt-10">PRIVACY / WISHLIST</Eyebrow>
-          <h1 className="mt-6 font-display text-[clamp(2rem,5vw,3.2rem)] leading-[1.04] text-ink">
+          <h1 className="mt-10 font-display text-[clamp(2rem,5vw,3.2rem)] leading-[1.04] text-ink">
             Privacy notice
           </h1>
           <p className="mt-5 text-[0.98rem] leading-relaxed text-muted">

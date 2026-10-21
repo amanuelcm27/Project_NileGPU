@@ -7,7 +7,8 @@ import { Eyebrow } from "@/components/ui/Primitives";
 import { Reveal } from "@/components/ui/Reveal";
 import { WorkloadGlyph } from "@/components/visuals/WorkloadGlyph";
 import { sectionIds } from "@/lib/config/navigation";
-import { workloads } from "@/lib/config/workloads";import { cn } from "@/lib/utils/cn";
+import { workloads } from "@/lib/config/workloads";
+import { cn } from "@/lib/utils/cn";
 
 /**
  * Stable id for the single detail panel.
@@ -172,10 +173,6 @@ export function Workloads() {
                       </span>
                     ))}
                   </div>
-
-                  <p className="mt-4 font-mono text-[0.72rem] leading-relaxed text-muted/90">
-                    {active.note}
-                  </p>
                 </motion.div>
               </AnimatePresence>
 
