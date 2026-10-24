@@ -1,8 +1,8 @@
 {
-  "name": "waliagpu",
+  "name": "redfoxgpu",
   "version": "1.0.0",
   "private": true,
-  "description": "WaliaGPU — Ethiopia's GPU cloud. Wishlist and demand validation platform.",
+  "description": "RedfoxGPU — Ethiopia's GPU cloud. Wishlist and demand validation platform.",
   "scripts": {
     "dev": "next dev",
     "build": "next build",

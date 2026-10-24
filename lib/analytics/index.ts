@@ -3,7 +3,7 @@
  *
  * There is deliberately no third-party analytics dependency. Events are:
  *  - dropped entirely during server rendering,
- *  - pushed to an in-memory buffer (`window.__waliagpuAnalytics`) so a real
+ *  - pushed to an in-memory buffer (`window.__redfoxgpuAnalytics`) so a real
  *    provider can be wired up later without touching call sites,
  *  - forwarded to NEXT_PUBLIC_ANALYTICS_ENDPOINT when that variable is set
  *    (fire-and-forget `sendBeacon`), or to a custom sink registered with
@@ -45,7 +45,7 @@ export type AnalyticsRecord = {
 
 declare global {
   interface Window {
-    __waliagpuAnalytics?: AnalyticsRecord[];
+    __redfoxgpuAnalytics?: AnalyticsRecord[];
   }
 }
 
@@ -96,7 +96,7 @@ export function track<K extends AnalyticsEventName>(
     ts: Date.now(),
   };
 
-  const buffer = (window.__waliagpuAnalytics ??= []);
+  const buffer = (window.__redfoxgpuAnalytics ??= []);
   buffer.push(record);
   if (buffer.length > MAX_BUFFERED_EVENTS) buffer.splice(0, buffer.length - MAX_BUFFERED_EVENTS);
 

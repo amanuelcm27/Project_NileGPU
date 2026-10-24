@@ -108,12 +108,12 @@ export async function handleWishlistPost(request: Request): Promise<Response> {
   const abuse = readAbuseSignals(parsedBody);
 
   if (abuse.honeypot && abuse.honeypot.trim().length > 0) {
-    console.warn(`[waliagpu] wishlist: honeypot triggered (request ${requestId})`);
+    console.warn(`[redfoxgpu] wishlist: honeypot triggered (request ${requestId})`);
     return failure("rejected", "We could not process that submission.", 400, { requestId });
   }
 
   if (typeof abuse.elapsedMs === "number" && abuse.elapsedMs < limits.minElapsedMs) {
-    console.warn(`[waliagpu] wishlist: implausibly fast submission (request ${requestId})`);
+    console.warn(`[redfoxgpu] wishlist: implausibly fast submission (request ${requestId})`);
     return failure("rejected", "We could not process that submission.", 400, { requestId });
   }
 
@@ -147,7 +147,7 @@ export async function handleWishlistPost(request: Request): Promise<Response> {
 
   if (lookupError) {
     console.error(
-      `[waliagpu] wishlist email lookup failed (request ${requestId}): code=${lookupError.code ?? "unknown"} message=${lookupError.message}`,
+      `[redfoxgpu] wishlist email lookup failed (request ${requestId}): code=${lookupError.code ?? "unknown"} message=${lookupError.message}`,
     );
     return failure(
       "storage_error",
@@ -158,7 +158,7 @@ export async function handleWishlistPost(request: Request): Promise<Response> {
   }
 
   if (existing) {
-    console.warn(`[waliagpu] wishlist duplicate email rejected (request ${requestId})`);
+    console.warn(`[redfoxgpu] wishlist duplicate email rejected (request ${requestId})`);
     return duplicateEmailFailure(requestId);
   }
 
@@ -170,7 +170,7 @@ export async function handleWishlistPost(request: Request): Promise<Response> {
 
   if (error) {
     console.error(
-      `[waliagpu] wishlist insert failed (request ${requestId}): code=${error.code ?? "unknown"} message=${error.message}`,
+      `[redfoxgpu] wishlist insert failed (request ${requestId}): code=${error.code ?? "unknown"} message=${error.message}`,
     );
 
     // Another request inserted the same address between the lookup and insert.
@@ -190,7 +190,7 @@ export async function handleWishlistPost(request: Request): Promise<Response> {
   }
 
   if (!data || typeof data.id !== "string") {
-    console.error(`[waliagpu] wishlist insert returned no id (request ${requestId})`);
+    console.error(`[redfoxgpu] wishlist insert returned no id (request ${requestId})`);
     return failure(
       "storage_error",
       "We could not confirm that your application was saved. Please try again.",

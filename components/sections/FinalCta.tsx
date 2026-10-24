@@ -26,9 +26,9 @@ export function FinalCta() {
       <div aria-hidden className="absolute inset-0 grid-backdrop opacity-[0.18]" />
       <span
         aria-hidden
-        className="pointer-events-none absolute inset-x-0 top-1/2 -translate-y-1/2 select-none text-center font-display text-[22vw] font-bold leading-none text-ink/[0.03]"
+        className="pointer-events-none absolute inset-x-0 top-1/2 -translate-y-1/2 select-none text-center font-display text-[17vw] font-bold leading-none text-ink/[0.03]"
       >
-        WALIAGPU
+        REDFOXGPU
       </span>
 
       <div className="shell relative">

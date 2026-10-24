@@ -191,7 +191,7 @@ export function GpuSchematic({ className }: { className?: string }) {
           HOST INTERFACE
         </text>
         <text x={28} y={398} fill="#6F7268">
-          WALIAGPU / SCHEMATIC
+          REDFOGXPU / SCHEMATIC
         </text>
         <text x={28} y={412} fill="#6F7268">
           REV A · NOT TO SCALE

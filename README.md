@@ -1,6 +1,6 @@
-# WaliaGPU — Wishlist & Demand-Validation Platform
+# RedfoxGPU — Wishlist & Demand-Validation Platform
 
-A production-quality Next.js site for **WaliaGPU**, a proposed Ethiopian GPU cloud
+A production-quality Next.js site for **RedfoxGPU**, a proposed Ethiopian GPU cloud
 service. It is a *demand-validation* tool, not a storefront: there is no pricing,
 no capacity for sale, and no fabricated usage statistics anywhere on the site.
 
@@ -89,7 +89,7 @@ keys.**
 | `NEXT_PUBLIC_SUPABASE_ANON_KEY` | Yes\*    | Client+SRV  | Public anon key. Currently unused by the frontend (anonymous DB access is denied) but part of a complete Supabase setup. |
 | `SUPABASE_SERVICE_ROLE_KEY`     | Yes\*    | **Server**  | Insert key used by `POST /api/wishlist`. Never expose to the browser.                      |
 | `NEXT_PUBLIC_SITE_URL`          | No       | Client+SRV  | Absolute site URL for canonical links, sitemap and OG metadata. Falls back to the Vercel URL, then `http://localhost:3000`. |
-| `NEXT_PUBLIC_CONTACT_EMAIL`     | No       | Client      | Public contact address in the footer and privacy notice. Defaults to `wishlist@waliagpu.com`. |
+| `NEXT_PUBLIC_CONTACT_EMAIL`     | No       | Client      | Public contact address in the footer and privacy notice. Defaults to `contact@redfoxgpu.com`. |
 | `NEXT_PUBLIC_ANALYTICS_ENDPOINT`| No       | Client      | Optional analytics sink. Empty disables forwarding.                                       |
 | `UPSTASH_REDIS_REST_URL`        | No       | **Server**  | Distributed rate limiting (Upstash REST).                                                |
 | `UPSTASH_REDIS_REST_TOKEN`      | No       | **Server**  | Distributed rate limiting (Upstash REST).                                                |
@@ -353,7 +353,7 @@ the limiter key.
 `lib/analytics` is a tiny, typed abstraction with no third-party dependency.
 Events (`hero_cta_clicked`, `survey_started`, `survey_completed`,
 `wishlist_submitted`, `survey_abandoned`) are pushed to a bounded in-memory buffer
-(`window.__waliagpuAnalytics`) and — if `NEXT_PUBLIC_ANALYTICS_ENDPOINT` is set —
+(`window.__redfoxgpuAnalytics`) and — if `NEXT_PUBLIC_ANALYTICS_ENDPOINT` is set —
 forwarded with `navigator.sendBeacon`. Props are restricted to non-identifying
 values and scrubbed before leaving the browser; abandon events report only the
 *shape* of progress (last step, counts, percent) and never answers.

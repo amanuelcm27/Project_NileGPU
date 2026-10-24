@@ -17,7 +17,7 @@ export async function POST(request: Request): Promise<Response> {
   } catch (error) {
     // Never let an unexpected exception surface as a framework error page: the
     // client expects JSON so it can show a safe, actionable message.
-    console.error("[waliagpu] wishlist: unhandled submission error", error);
+    console.error("[redfoxgpu] wishlist: unhandled submission error", error);
     return Response.json(
       {
         ok: false,

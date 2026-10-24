@@ -30,7 +30,7 @@ export const metadata: Metadata = {
     template: `%s · ${brand.name}`,
   },
   description:
-    "WaliaGPU is building GPU cloud compute for Ethiopia: run inference, fine-tune open-source models, and train machine-learning workloads with locally accessible access and ETB payment options. Join the early-access wishlist.",
+    "RedfoxGPU is building GPU cloud compute for Ethiopia: run inference, fine-tune open-source models, and train machine-learning workloads with locally accessible access and ETB payment options. Join the early-access wishlist.",
   applicationName: brand.name,
   keywords: [
     "GPU cloud Ethiopia",
@@ -40,7 +40,7 @@ export const metadata: Metadata = {
     "fine-tuning",
     "machine learning compute",
     "ETB GPU payments",
-    "WaliaGPU",
+    "RedfoxGPU",
   ],
   authors: [{ name: brand.name }],
   category: "technology",

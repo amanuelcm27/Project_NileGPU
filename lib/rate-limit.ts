@@ -139,10 +139,10 @@ export async function checkRateLimit(
   if (!config) return memoryLimit(key, options);
 
   try {
-    return await upstashLimit(`waliagpu:rl:${key}`, options, config);
+    return await upstashLimit(`redfoxgpu:rl:${key}`, options, config);
   } catch (error) {
     console.warn(
-      `[waliagpu] Distributed rate limiter unavailable, falling back to per-instance limit: ${
+      `[redfoxgpu] Distributed rate limiter unavailable, falling back to per-instance limit: ${
         error instanceof Error ? error.message : "unknown error"
       }`,
     );
