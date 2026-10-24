@@ -126,11 +126,6 @@ export function ReviewStep({
               ))}
             </ul>
           ) : null}
-          {error.requestId ? (
-            <p className="mt-3 font-mono text-[0.68rem] text-muted/80">
-              Reference for support: {error.requestId}
-            </p>
-          ) : null}
           <p className="mt-3 font-mono text-[0.7rem] text-muted">
             Your answers have been kept. Use “Submit” to try again.
           </p>
