@@ -1,5 +1,11 @@
 import { z } from "zod";
-import { optionIds, type QuestionKey } from "@/lib/survey/questions";
+import {
+  isFreeTextSelected,
+  optionIds,
+  questions,
+  type QuestionKey,
+} from "@/lib/survey/questions";
+import type { QuestionDef } from "@/lib/survey/types";
 
 /**
  * Request-size and text limits for the wishlist endpoint.
@@ -10,7 +16,7 @@ export const limits = {
   maxNameLength: 120,
   maxEmailLength: 254,
   maxShortTextLength: 200,
-  /** A full 15-step survey cannot be completed faster than this. */
+  /** A complete survey cannot be finished faster than this. */
   minElapsedMs: 1500,
   maxElapsedMs: 6 * 60 * 60 * 1000,
 } as const;
@@ -66,6 +72,9 @@ const optionalText = z
 const optionList = (key: QuestionKey) =>
   z.array(optionEnum(key, key)).max(20).default([]);
 
+const requiredOptionList = (key: QuestionKey, message: string) =>
+  z.array(optionEnum(key, key)).min(1, { error: message }).max(20);
+
 /**
  * The complete wishlist submission contract.
  *
@@ -82,11 +91,16 @@ export const wishlistSubmissionSchema = z
     userType: optionEnum("userType", "Which best describes you?"),
     userTypeOther: optionalText,
 
-    gpuWorkload: optionEnum("gpuWorkload", "What do you need GPU compute for?"),
+    gpuWorkloads: requiredOptionList(
+      "gpuWorkloads",
+      "Select at least one workload you need GPU compute for",
+    ),
     gpuWorkloadOther: optionalText,
 
     vramRequirement: optionEnum("vramRequirement", "GPU memory capacity"),
+    vramRequirementOther: optionalText,
     usageFrequency: optionEnum("usageFrequency", "Usage frequency"),
+    usageFrequencyOther: optionalText,
 
     usedGpuCloud: z.boolean({ error: "Select whether you have used a GPU cloud service" }),
 
@@ -106,8 +120,6 @@ export const wishlistSubmissionSchema = z
     currentComputeSolutionOther: optionalText,
 
     etbPaymentPreference: optionEnum("etbPaymentPreference", "Paying in Ethiopian birr"),
-    monthlyComputeBudget: optionEnum("monthlyComputeBudget", "Monthly GPU compute budget"),
-    earlyAccessIntent: optionEnum("earlyAccessIntent", "Early-access intent"),
 
     /** Abuse protection — never persisted. */
     honeypot: z.string().max(limits.maxShortTextLength).optional(),
@@ -159,49 +171,104 @@ export const wishlistSubmissionSchema = z
         });
       }
     }
+
+    // Every "Other" / "Custom" choice must be explained. The UI opens a text
+    // field for these options, and this check makes the field genuinely required.
+    const requireFreeText = (
+      questionKey: QuestionKey,
+      fieldValue: string | string[],
+      otherValue: string | undefined,
+    ) => {
+      const question: QuestionDef = questions[questionKey];
+      if (!question.otherKey) return;
+      if (
+        isFreeTextSelected(question, fieldValue) &&
+        (!otherValue || otherValue.trim().length === 0)
+      ) {
+        ctx.addIssue({
+          code: "custom",
+          path: [question.otherKey],
+          message: "Enter a short description for the option you selected.",
+        });
+      }
+    };
+
+    requireFreeText("userType", value.userType, value.userTypeOther);
+    requireFreeText("gpuWorkloads", value.gpuWorkloads, value.gpuWorkloadOther);
+    requireFreeText("vramRequirement", value.vramRequirement, value.vramRequirementOther);
+    requireFreeText("usageFrequency", value.usageFrequency, value.usageFrequencyOther);
+    requireFreeText("providersUsed", value.providersUsed, value.providersOther);
+    requireFreeText(
+      "previousServiceProblems",
+      value.previousServiceProblems,
+      value.previousServiceProblemsOther,
+    );
+    requireFreeText("adoptionBarriers", value.adoptionBarriers, value.adoptionBarriersOther);
+    requireFreeText(
+      "currentComputeSolution",
+      value.currentComputeSolution,
+      value.currentComputeSolutionOther,
+    );
   })
   .transform((value) => {
     const withOther = (
       text: string | undefined,
-      selected: boolean,
-    ): string | null => (selected && text ? text : null);
+      questionKey: QuestionKey,
+      fieldValue: string | string[],
+    ): string | null => {
+      const question = questions[questionKey];
+      return isFreeTextSelected(question, fieldValue) && text ? text : null;
+    };
 
     return {
       full_name: value.fullName,
       email: value.email,
       user_type: value.userType,
-      user_type_other: withOther(value.userTypeOther, value.userType === "other"),
-      gpu_workloads: [value.gpuWorkload],
+      user_type_other: withOther(value.userTypeOther, "userType", value.userType),
+      gpu_workloads: value.gpuWorkloads,
       gpu_workload_other: withOther(
         value.gpuWorkloadOther,
-        value.gpuWorkload === "other",
+        "gpuWorkloads",
+        value.gpuWorkloads,
       ),
       vram_requirement: value.vramRequirement,
+      vram_requirement_other: withOther(
+        value.vramRequirementOther,
+        "vramRequirement",
+        value.vramRequirement,
+      ),
       usage_frequency: value.usageFrequency,
+      usage_frequency_other: withOther(
+        value.usageFrequencyOther,
+        "usageFrequency",
+        value.usageFrequency,
+      ),
       used_gpu_cloud: value.usedGpuCloud,
       providers_used: value.usedGpuCloud ? value.providersUsed : [],
       providers_other: withOther(
         value.providersOther,
-        value.usedGpuCloud && value.providersUsed.includes("other"),
+        "providersUsed",
+        value.usedGpuCloud ? value.providersUsed : [],
       ),
       previous_service_problems: value.usedGpuCloud ? value.previousServiceProblems : [],
       previous_service_problems_other: withOther(
         value.previousServiceProblemsOther,
-        value.usedGpuCloud && value.previousServiceProblems.includes("other"),
+        "previousServiceProblems",
+        value.usedGpuCloud ? value.previousServiceProblems : [],
       ),
       adoption_barriers: value.usedGpuCloud ? [] : value.adoptionBarriers,
       adoption_barriers_other: withOther(
         value.adoptionBarriersOther,
-        !value.usedGpuCloud && value.adoptionBarriers.includes("other"),
+        "adoptionBarriers",
+        value.usedGpuCloud ? [] : value.adoptionBarriers,
       ),
       current_compute_solution: value.currentComputeSolution,
       current_compute_solution_other: withOther(
         value.currentComputeSolutionOther,
-        value.currentComputeSolution === "other",
+        "currentComputeSolution",
+        value.currentComputeSolution,
       ),
       etb_payment_preference: value.etbPaymentPreference,
-      monthly_compute_budget: value.monthlyComputeBudget,
-      early_access_intent: value.earlyAccessIntent,
     };
   });
 
@@ -214,7 +281,9 @@ export type WishlistSubmissionInput = z.input<typeof wishlistSubmissionSchema>;
 export function toFieldErrors(error: z.ZodError): Record<string, string> {
   const errors: Record<string, string> = {};
   for (const issue of error.issues) {
-    const key = issue.path.length > 0 ? issue.path.join(".") : "form";
+    // Array element issues are reported as ["gpuWorkloads", 0]. The interface
+    // edits the field as a whole, so collapse them to the top-level key.
+    const key = issue.path.length > 0 ? String(issue.path[0]) : "form";
     if (!errors[key]) errors[key] = issue.message;
   }
   return errors;

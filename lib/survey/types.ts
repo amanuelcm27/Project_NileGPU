@@ -10,10 +10,12 @@
 export type AnswerKey =
   | "userType"
   | "userTypeOther"
-  | "gpuWorkload"
+  | "gpuWorkloads"
   | "gpuWorkloadOther"
   | "vramRequirement"
+  | "vramRequirementOther"
   | "usageFrequency"
+  | "usageFrequencyOther"
   | "usedGpuCloud"
   | "providersUsed"
   | "providersOther"
@@ -23,12 +25,11 @@ export type AnswerKey =
   | "adoptionBarriersOther"
   | "currentComputeSolution"
   | "currentComputeSolutionOther"
-  | "etbPaymentPreference"
-  | "monthlyComputeBudget"
-  | "earlyAccessIntent";
+  | "etbPaymentPreference";
 
 /** Keys whose value is a list of option ids. */
 export type MultiAnswerKey =
+  | "gpuWorkloads"
   | "providersUsed"
   | "previousServiceProblems"
   | "adoptionBarriers";
@@ -36,19 +37,15 @@ export type MultiAnswerKey =
 export type StepId =
   | "identity"
   | "userType"
-  | "gpuWorkload"
+  | "gpuWorkloads"
   | "vramRequirement"
   | "usageFrequency"
-  | "interstitialHalfway"
   | "usedGpuCloud"
   | "providersUsed"
   | "previousServiceProblems"
   | "adoptionBarriers"
   | "currentComputeSolution"
-  | "interstitialAlmost"
   | "etbPaymentPreference"
-  | "monthlyComputeBudget"
-  | "earlyAccessIntent"
   | "review";
 
 export interface SurveyOption {
@@ -71,17 +68,12 @@ export interface QuestionDef {
   options: SurveyOption[];
   /** Multi-select questions keep their own "other" option; single ones too. */
   allowOther: boolean;
+  /** Option id that opens the free-text field; defaults to "other". */
+  otherOptionId?: string;
   otherKey?: AnswerKey;
   otherPlaceholder?: string;
   /** Multi-select questions store arrays under `field`. */
   multiField?: MultiAnswerKey;
-}
-
-export interface InterstitialDef {
-  id: StepId;
-  kind: "interstitial";
-  headline: string;
-  supporting?: string;
 }
 
 export interface ReviewDef {
@@ -95,7 +87,7 @@ export interface IdentityDef {
   kind: "identity";
 }
 
-export type StepDef = QuestionDef | InterstitialDef | ReviewDef | IdentityDef;
+export type StepDef = QuestionDef | ReviewDef | IdentityDef;
 
 /** Answers collected across the survey. All values are strings or string[]. */
 export type SurveyAnswers = Partial<Record<AnswerKey, string | string[]>>;

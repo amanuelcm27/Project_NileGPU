@@ -1,5 +1,9 @@
-import { getQuestion, isQuestionStep, questions } from "@/lib/survey/questions";
-import { OTHER_OPTION_ID } from "@/lib/survey/questions";
+import {
+  getQuestion,
+  isFreeTextSelected,
+  isQuestionStep,
+  questions,
+} from "@/lib/survey/questions";
 import { resolveSteps } from "@/lib/survey/flow";
 import type {
   AnswerKey,
@@ -39,7 +43,7 @@ function asArray(value: string | string[] | undefined): string[] {
   return Array.isArray(value) ? value : [];
 }
 
-/** Whether a step holds a complete answer. Interstitials and review are always "answered". */
+/** Whether a step holds a complete answer. Review is always "answered". */
 export function isStepAnswered(stepId: StepId, state: SurveyState): boolean {
   if (stepId === "identity") {
     return Boolean(state.identity.fullName?.trim() && state.identity.email?.trim());
@@ -122,15 +126,11 @@ export function pruneInapplicableAnswers(answers: SurveyAnswers): SurveyAnswers 
     delete pruned.adoptionBarriersOther;
   }
 
-  // Free-text "other" answers only apply when the option is selected.
+  // Free-text "other" / "custom" answers only apply when their option is selected.
   for (const question of Object.values(questions)) {
     if (!question.allowOther || !question.otherKey) continue;
     const selected = pruned[question.field];
-    const otherSelected =
-      question.selection === "multi"
-        ? asArray(selected).includes(OTHER_OPTION_ID)
-        : selected === OTHER_OPTION_ID;
-    if (!otherSelected) {
+    if (!isFreeTextSelected(question, selected)) {
       delete pruned[question.otherKey];
     }
   }
@@ -158,14 +158,14 @@ export function buildReviewRows(state: SurveyState): ReviewRow[] {
       for (const id of asArray(value)) {
         labels.push(optionDisplayLabel(question, id));
       }
-      if (asArray(value).includes(OTHER_OPTION_ID) && question.otherKey) {
+      if (isFreeTextSelected(question, value) && question.otherKey) {
         const other = asString(state.answers[question.otherKey]);
         if (other) labels.push(other);
       }
     } else {
       const single = asString(value);
       if (single) labels.push(optionDisplayLabel(question, single));
-      if (single === OTHER_OPTION_ID && question.otherKey) {
+      if (isFreeTextSelected(question, single ?? undefined) && question.otherKey) {
         const other = asString(state.answers[question.otherKey]);
         if (other) labels.push(other);
       }

@@ -15,13 +15,7 @@ export function ProgressRail({ progress }: { progress: SurveyProgress }) {
     <div className="border-b border-line bg-obsidian/70 px-4 py-4 sm:px-6">
       <div className="flex flex-wrap items-baseline justify-between gap-2">
         <span className="label-mono-sm text-muted">WISHLIST APPLICATION</span>
-        <div className="flex items-center gap-3">
-          <span className="label-mono-sm text-primary">{statusText(progress.percent)}</span>
-          <span className="font-mono text-[0.72rem] text-muted">
-            STEP {String(progress.stepNumber).padStart(2, "0")} /{" "}
-            {String(progress.total).padStart(2, "0")}
-          </span>
-        </div>
+        <span className="label-mono-sm text-primary">{statusText(progress.percent)}</span>
       </div>
 
       <div

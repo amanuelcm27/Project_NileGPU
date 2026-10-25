@@ -3,7 +3,6 @@
 import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { IdentityStep } from "@/components/survey/IdentityStep";
-import { InterstitialStep } from "@/components/survey/InterstitialStep";
 import { ProgressRail } from "@/components/survey/ProgressRail";
 import { QuestionStep } from "@/components/survey/QuestionStep";
 import { ReviewStep } from "@/components/survey/ReviewStep";
@@ -17,7 +16,7 @@ import {
   type SurveyState,
 } from "@/lib/survey/engine";
 import { getStepDef, nextStepId, previousStepId, stepForField } from "@/lib/survey/flow";
-import { getQuestion, type QuestionKey } from "@/lib/survey/questions";
+import { getQuestion, isFreeTextSelected, type QuestionKey } from "@/lib/survey/questions";
 import { buildSubmissionPayload } from "@/lib/survey/payload";
 import type {
   AnswerKey,
@@ -70,7 +69,7 @@ export function SurveyApp() {
     if (!heading) return;
     heading.setAttribute("tabindex", "-1");
     heading.focus({ preventScroll: false });
-  }, [currentStepId, status]);
+  }, [currentStepId]);
 
   // Anonymous abandonment signal: shape of progress only, no answers, no PII.
   useEffect(() => {
@@ -182,10 +181,22 @@ export function SurveyApp() {
       return;
     }
 
-    const otherText = question.otherKey ? state.answers[question.otherKey] : undefined;
-    if (typeof otherText === "string" && otherText.length > limits.maxShortTextLength) {
-      setStepError(`Please keep that under ${limits.maxShortTextLength} characters.`);
-      return;
+    const otherKey = question.otherKey;
+    if (question.allowOther && otherKey && isFreeTextSelected(question, state.answers[question.field])) {
+      const raw = state.answers[otherKey];
+      const text = typeof raw === "string" ? raw.trim() : "";
+      if (text.length === 0) {
+        const message = "Enter a short description for the option you selected.";
+        setStepError(message);
+        setServerFieldErrors((previous) => ({ ...previous, [otherKey]: message }));
+        return;
+      }
+      if (text.length > limits.maxShortTextLength) {
+        const message = `Please keep that under ${limits.maxShortTextLength} characters.`;
+        setStepError(message);
+        setServerFieldErrors((previous) => ({ ...previous, [otherKey]: message }));
+        return;
+      }
     }
 
     goNext();
@@ -266,7 +277,7 @@ export function SurveyApp() {
   return (
     <div ref={containerRef} className="panel clip-corner overflow-hidden bg-surface">
       <div className="flex items-center justify-between border-b border-line bg-surface-alt/60 px-4 py-2.5 sm:px-6">
-        <span className="label-mono-sm text-ink">REDFOXGPU · WISHLIST APPLICATION</span>
+        <span className="label-mono-sm text-ink">Apply now</span>
       </div>
 
       <ProgressRail progress={progress} />
@@ -299,15 +310,6 @@ export function SurveyApp() {
                 showBack={showBack}
                 onChange={setAnswer}
                 onContinue={() => continueFromQuestion(stepDef.id as QuestionKey)}
-                onBack={goBack}
-              />
-            ) : null}
-
-            {stepDef.kind === "interstitial" ? (
-              <InterstitialStep
-                definition={stepDef}
-                showBack={showBack}
-                onContinue={goNext}
                 onBack={goBack}
               />
             ) : null}

@@ -34,12 +34,14 @@ export const questions = {
       { id: OTHER_OPTION_ID, label: "Other" },
     ],
   },
-  gpuWorkload: {
-    id: "gpuWorkload",
+  gpuWorkloads: {
+    id: "gpuWorkloads",
     kind: "question",
-    field: "gpuWorkload",
+    field: "gpuWorkloads",
+    multiField: "gpuWorkloads",
     prompt: "What do you need GPU compute for?",
-    selection: "single",
+    supporting: "Select all that apply.",
+    selection: "multi",
     allowOther: true,
     otherKey: "gpuWorkloadOther",
     otherPlaceholder: "Describe your workload",
@@ -69,9 +71,12 @@ export const questions = {
     id: "vramRequirement",
     kind: "question",
     field: "vramRequirement",
-    prompt: "What GPU memory capacity do you currently need?",
+    prompt: "What GPU memory capacity do you need?",
     selection: "single",
-    allowOther: false,
+    allowOther: true,
+    otherOptionId: "custom",
+    otherKey: "vramRequirementOther",
+    otherPlaceholder: "Describe the GPU memory capacity you need",
     options: [
       { id: "lt_8gb", label: "Less than 8 GB VRAM" },
       { id: "8_16gb", label: "8–16 GB VRAM" },
@@ -80,20 +85,24 @@ export const questions = {
       { id: "48_80gb", label: "48–80 GB VRAM" },
       { id: "gt_80gb", label: "More than 80 GB VRAM" },
       { id: "unknown", label: "I don't know yet" },
+      { id: "custom", label: "Custom" },
     ],
   },
   usageFrequency: {
     id: "usageFrequency",
     kind: "question",
     field: "usageFrequency",
-    prompt: "How often would you need GPU compute?",
+    prompt: "How often do you need GPU compute?",
     selection: "single",
-    allowOther: false,
+    allowOther: true,
+    otherKey: "usageFrequencyOther",
+    otherPlaceholder: "Describe how often you need GPU compute",
     options: [
-      { id: "daily", label: "Daily" },
+      { id: "continuous", label: "I need 24/7 constant access" },
+      { id: "daily", label: "Daily for a couple of hours" },
       { id: "several_times_week", label: "Several times per week" },
-      { id: "several_times_month", label: "Several times per month" },
-      { id: "continuous", label: "Continuously (non stop)" },
+      { id: "several_times_month", label: "A few times per month" },
+      { id: OTHER_OPTION_ID, label: "Other" },
     ],
   },
   usedGpuCloud: {
@@ -207,35 +216,6 @@ export const questions = {
       { id: "not_sure", label: "Not sure" },
     ],
   },
-  monthlyComputeBudget: {
-    id: "monthlyComputeBudget",
-    kind: "question",
-    field: "monthlyComputeBudget",
-    prompt: "How much would you realistically spend on GPU compute in a typical month?",
-    selection: "single",
-    allowOther: false,
-    options: [
-      { id: "lt_500", label: "Less than 500 ETB" },
-      { id: "500_2000", label: "500–2,000 ETB" },
-      { id: "2000_5000", label: "2,000–5,000 ETB" },
-      { id: "5000_10000", label: "5,000–10,000 ETB" },
-      { id: "10000_50000", label: "10,000–50,000 ETB" },
-      { id: "gt_50000", label: "More than 50,000 ETB" },
-    ],
-  },
-  earlyAccessIntent: {
-    id: "earlyAccessIntent",
-    kind: "question",
-    field: "earlyAccessIntent",
-    prompt: "If you get access, would you try the service?",
-    selection: "single",
-    allowOther: false,
-    options: [
-      { id: "definitely", label: "Definitely" },
-      { id: "maybe", label: "Maybe" },
-      { id: "no", label: "No" },
-    ],
-  },
 } satisfies Record<string, QuestionDef>;
 
 export type QuestionKey = keyof typeof questions;
@@ -248,6 +228,24 @@ export const multiSelectQuestionIds = Object.values(questions)
 /** Ordered option ids for a question — used by validation and schema parity tests. */
 export function optionIds(questionKey: QuestionKey): string[] {
   return questions[questionKey].options.map((option: SurveyOption) => option.id);
+}
+
+/** Option id that reveals the free-text field, or null when the question has none. */
+export function freeTextOptionId(question: QuestionDef): string | null {
+  if (!question.allowOther) return null;
+  return question.otherOptionId ?? OTHER_OPTION_ID;
+}
+
+/** Whether the selected answer includes the question's free-text option. */
+export function isFreeTextSelected(
+  question: QuestionDef,
+  value: string | string[] | undefined,
+): boolean {
+  const optionId = freeTextOptionId(question);
+  if (!optionId) return false;
+  return question.selection === "multi"
+    ? Array.isArray(value) && value.includes(optionId)
+    : value === optionId;
 }
 
 /** Look up the stored value for a display label (falls back to the raw value). */

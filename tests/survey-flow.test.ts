@@ -6,16 +6,12 @@ import type { StepId, SurveyAnswers } from "@/lib/survey/types";
 const BASE_FLOW_WITHOUT_BRANCH: StepId[] = [
   "identity",
   "userType",
-  "gpuWorkload",
+  "gpuWorkloads",
   "vramRequirement",
   "usageFrequency",
-  "interstitialHalfway",
   "usedGpuCloud",
   "currentComputeSolution",
-  "interstitialAlmost",
   "etbPaymentPreference",
-  "monthlyComputeBudget",
-  "earlyAccessIntent",
   "review",
 ];
 
@@ -25,8 +21,8 @@ describe("survey flow resolution", () => {
     expect(steps).toContain("providersUsed");
     expect(steps).toContain("previousServiceProblems");
     expect(steps).toContain("adoptionBarriers");
-    // 13 fixed steps + 3 possible branch steps
-    expect(steps).toHaveLength(16);
+    // 9 fixed steps + 3 possible branch steps
+    expect(steps).toHaveLength(12);
     expect(steps[0]).toBe("identity");
     expect(steps.at(-1)).toBe("review");
   });
@@ -36,7 +32,7 @@ describe("survey flow resolution", () => {
     expect(steps).toContain("providersUsed");
     expect(steps).toContain("previousServiceProblems");
     expect(steps).not.toContain("adoptionBarriers");
-    expect(steps).toHaveLength(15);
+    expect(steps).toHaveLength(11);
     // Ordering: providers and problems come before the current-alternative question.
     expect(steps.indexOf("providersUsed")).toBeLessThan(steps.indexOf("currentComputeSolution"));
     expect(steps.indexOf("previousServiceProblems")).toBeLessThan(
@@ -49,7 +45,7 @@ describe("survey flow resolution", () => {
     expect(steps).toContain("adoptionBarriers");
     expect(steps).not.toContain("providersUsed");
     expect(steps).not.toContain("previousServiceProblems");
-    expect(steps).toHaveLength(14);
+    expect(steps).toHaveLength(10);
   });
 
   it("keeps every fixed step in both branches", () => {
@@ -59,6 +55,12 @@ describe("survey flow resolution", () => {
         expect(steps).toContain(id);
       }
     }
+  });
+
+  it("no longer contains transition steps", () => {
+    const steps = resolveSteps({}) as string[];
+    expect(steps).not.toContain("interstitialHalfway");
+    expect(steps).not.toContain("interstitialAlmost");
   });
 });
 
@@ -79,7 +81,7 @@ describe("progress indicator", () => {
       "review",
     );
     expect(progressAtEnd.answeredQuestions).toBe(1);
-    expect(progressAtEnd.totalQuestions).toBe(10);
+    expect(progressAtEnd.totalQuestions).toBe(8);
   });
 
   it("reports monotonic progress while the branch answer shrinks the flow", () => {
@@ -88,7 +90,7 @@ describe("progress indicator", () => {
     let state = { identity, answers };
 
     const atBranch = buildProgress(state, "usedGpuCloud");
-    expect(atBranch.percent).toBe(Math.round((6 / 15) * 100));
+    expect(atBranch.percent).toBe(Math.round((5 / 11) * 100));
 
     answers = { ...answers, usedGpuCloud: "no" };
     state = { identity, answers };
@@ -104,16 +106,23 @@ describe("progress indicator", () => {
     const sequence: Array<[StepId, SurveyAnswers]> = [
       ["identity", {}],
       ["userType", { userType: "ai_startup" }],
-      ["gpuWorkload", { userType: "ai_startup", gpuWorkload: "fine_tuning" }],
+      [
+        "gpuWorkloads",
+        { userType: "ai_startup", gpuWorkloads: ["fine_tuning", "llm_inference"] },
+      ],
       [
         "vramRequirement",
-        { userType: "ai_startup", gpuWorkload: "fine_tuning", vramRequirement: "24_48gb" },
+        {
+          userType: "ai_startup",
+          gpuWorkloads: ["fine_tuning", "llm_inference"],
+          vramRequirement: "24_48gb",
+        },
       ],
       [
         "usageFrequency",
         {
           userType: "ai_startup",
-          gpuWorkload: "fine_tuning",
+          gpuWorkloads: ["fine_tuning", "llm_inference"],
           vramRequirement: "24_48gb",
           usageFrequency: "daily",
         },
@@ -122,7 +131,7 @@ describe("progress indicator", () => {
         "usedGpuCloud",
         {
           userType: "ai_startup",
-          gpuWorkload: "fine_tuning",
+          gpuWorkloads: ["fine_tuning", "llm_inference"],
           vramRequirement: "24_48gb",
           usageFrequency: "daily",
         },
@@ -131,22 +140,46 @@ describe("progress indicator", () => {
         "providersUsed",
         {
           userType: "ai_startup",
-          gpuWorkload: "fine_tuning",
+          gpuWorkloads: ["fine_tuning", "llm_inference"],
           vramRequirement: "24_48gb",
           usageFrequency: "daily",
           usedGpuCloud: "yes",
         },
       ],
       [
+        "previousServiceProblems",
+        {
+          userType: "ai_startup",
+          gpuWorkloads: ["fine_tuning", "llm_inference"],
+          vramRequirement: "24_48gb",
+          usageFrequency: "daily",
+          usedGpuCloud: "yes",
+          providersUsed: ["runpod"],
+        },
+      ],
+      [
         "currentComputeSolution",
         {
           userType: "ai_startup",
-          gpuWorkload: "fine_tuning",
+          gpuWorkloads: ["fine_tuning", "llm_inference"],
           vramRequirement: "24_48gb",
           usageFrequency: "daily",
           usedGpuCloud: "yes",
           providersUsed: ["runpod"],
           previousServiceProblems: ["price"],
+        },
+      ],
+      [
+        "etbPaymentPreference",
+        {
+          userType: "ai_startup",
+          gpuWorkloads: ["fine_tuning", "llm_inference"],
+          vramRequirement: "24_48gb",
+          usageFrequency: "daily",
+          usedGpuCloud: "yes",
+          providersUsed: ["runpod"],
+          previousServiceProblems: ["price"],
+          currentComputeSolution: "rent_international",
         },
       ],
       ["review", { usedGpuCloud: "yes" }],
@@ -163,19 +196,22 @@ describe("progress indicator", () => {
     expect(lastPercent).toBe(100);
   });
 
-  it("treats interstitials as answered transitions", () => {
-    expect(isStepAnswered("interstitialHalfway", { identity: {}, answers: {} })).toBe(true);
-    expect(isStepAnswered("identity", { identity: {}, answers: {} })).toBe(false);
-    expect(
-      isStepAnswered("identity", { identity: { fullName: "A", email: "a@b.com" }, answers: {} }),
-    ).toBe(true);
-  });
-
-  it("requires at least one selection for multi-select questions", () => {
+  it("requires at least one answer for single and multi-select questions", () => {
     const identity = { fullName: "A", email: "a@b.com" };
+    expect(isStepAnswered("gpuWorkloads", { identity, answers: { gpuWorkloads: [] } })).toBe(false);
+    expect(
+      isStepAnswered("gpuWorkloads", {
+        identity,
+        answers: { gpuWorkloads: ["llm_inference"] },
+      }),
+    ).toBe(true);
     expect(isStepAnswered("providersUsed", { identity, answers: { providersUsed: [] } })).toBe(false);
     expect(
       isStepAnswered("providersUsed", { identity, answers: { providersUsed: ["runpod"] } }),
+    ).toBe(true);
+    expect(isStepAnswered("identity", { identity: {}, answers: {} })).toBe(false);
+    expect(
+      isStepAnswered("identity", { identity: { fullName: "A", email: "a@b.com" }, answers: {} }),
     ).toBe(true);
   });
 });
@@ -189,7 +225,10 @@ describe("branch switching", () => {
       previousServiceProblems: ["price"],
       previousServiceProblemsOther: "Extra detail",
       adoptionBarriers: ["too_expensive"],
-      monthlyComputeBudget: "lt_500",
+      vramRequirement: "custom",
+      vramRequirementOther: "48 GB",
+      usageFrequency: "other",
+      usageFrequencyOther: "Weekends",
     };
 
     const pruned = pruneInapplicableAnswers(answers);
@@ -199,7 +238,8 @@ describe("branch switching", () => {
     expect(pruned.providersOther).toBeUndefined();
     expect(pruned.previousServiceProblems).toBeUndefined();
     expect(pruned.previousServiceProblemsOther).toBeUndefined();
-    expect(pruned.monthlyComputeBudget).toBe("lt_500");
+    expect(pruned.vramRequirementOther).toBe("48 GB");
+    expect(pruned.usageFrequencyOther).toBe("Weekends");
   });
 
   it("drops 'other' free text when the other option is not selected", () => {
@@ -209,10 +249,13 @@ describe("branch switching", () => {
       providersOther: "should be dropped",
       previousServiceProblems: ["other"],
       previousServiceProblemsOther: "kept",
+      gpuWorkloads: ["llm_inference"],
+      gpuWorkloadOther: "should be dropped too",
     });
 
     expect(pruned.providersOther).toBeUndefined();
     expect(pruned.previousServiceProblemsOther).toBe("kept");
+    expect(pruned.gpuWorkloadOther).toBeUndefined();
   });
 
   it("drops empty strings and empty arrays", () => {
@@ -227,29 +270,38 @@ describe("branch switching", () => {
 });
 
 describe("review summary", () => {
-  it("uses display labels and includes free-text 'other' answers", () => {
+  it("uses display labels and includes free-text other/custom answers", () => {
     const rows = buildReviewRows({
       identity: { fullName: "Hanna", email: "h@example.com" },
       answers: {
         userType: "other",
         userTypeOther: "Independent researcher",
-        gpuWorkload: "llm_inference",
-        vramRequirement: "16_24gb",
-        usageFrequency: "daily",
+        gpuWorkloads: ["llm_inference", "image_generation"],
+        vramRequirement: "custom",
+        vramRequirementOther: "96 GB",
+        usageFrequency: "other",
+        usageFrequencyOther: "Weekends",
         usedGpuCloud: "yes",
         providersUsed: ["runpod", "other"],
         providersOther: "A local provider",
         previousServiceProblems: ["price"],
         currentComputeSolution: "own_computer",
         etbPaymentPreference: "yes",
-        monthlyComputeBudget: "lt_500",
-        earlyAccessIntent: "maybe",
       },
     });
 
     const userType = rows.find((row) => row.stepId === "userType");
     expect(userType?.prompt).toBe("Which best describes you?");
     expect(userType?.answers).toEqual(["Other", "Independent researcher"]);
+
+    const workloads = rows.find((row) => row.stepId === "gpuWorkloads");
+    expect(workloads?.answers).toEqual(["LLM inference", "Image generation"]);
+
+    const memory = rows.find((row) => row.stepId === "vramRequirement");
+    expect(memory?.answers).toEqual(["Custom", "96 GB"]);
+
+    const frequency = rows.find((row) => row.stepId === "usageFrequency");
+    expect(frequency?.answers).toEqual(["Other", "Weekends"]);
 
     const providers = rows.find((row) => row.stepId === "providersUsed");
     expect(providers?.answers).toEqual(["RunPod", "Other", "A local provider"]);

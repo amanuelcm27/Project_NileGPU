@@ -21,7 +21,7 @@ const sql = readFileSync(migrationPath, "utf8");
 
 const constraints: Array<{ constraint: string; question: QuestionKey }> = [
   { constraint: "wishlist_user_type_check", question: "userType" },
-  { constraint: "wishlist_gpu_workloads_check", question: "gpuWorkload" },
+  { constraint: "wishlist_gpu_workloads_check", question: "gpuWorkloads" },
   { constraint: "wishlist_vram_requirement_check", question: "vramRequirement" },
   { constraint: "wishlist_usage_frequency_check", question: "usageFrequency" },
   { constraint: "wishlist_providers_used_check", question: "providersUsed" },
@@ -29,8 +29,6 @@ const constraints: Array<{ constraint: string; question: QuestionKey }> = [
   { constraint: "wishlist_adoption_barriers_check", question: "adoptionBarriers" },
   { constraint: "wishlist_current_compute_solution_check", question: "currentComputeSolution" },
   { constraint: "wishlist_etb_payment_preference_check", question: "etbPaymentPreference" },
-  { constraint: "wishlist_monthly_compute_budget_check", question: "monthlyComputeBudget" },
-  { constraint: "wishlist_early_access_intent_check", question: "earlyAccessIntent" },
 ];
 
 function lineFor(constraint: string): string {
@@ -67,8 +65,8 @@ describe("SQL migration parity with the survey configuration", () => {
   it("enforces branch consistency and email normalisation in the database", () => {
     expect(sql).toMatch(/wishlist_branch_consistency_check/);
     expect(sql).toMatch(/email = lower\(btrim\(email\)\)/);
-    const prunedColumns = quotedValues(lineFor("wishlist_providers_other_check"));
-    expect(prunedColumns).toContain("other");
+    expect(sql).toContain("providers_used @> array['other']::text[]");
+    expect(sql).toContain("providers_other is not null");
   });
 });
 
@@ -126,7 +124,6 @@ describe("database security posture", () => {
       "wishlist_email_unique_idx",
       "wishlist_user_type_idx",
       "wishlist_usage_frequency_idx",
-      "wishlist_monthly_compute_budget_idx",
       "wishlist_gpu_workloads_gin_idx",
     ]) {
       expect(sql).toContain(index);

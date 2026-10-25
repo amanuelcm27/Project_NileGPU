@@ -129,8 +129,8 @@ export async function submitWishlist(
           code: "rate_limited",
           message:
             typeof retryAfter === "number" && retryAfter > 0
-              ? `Too many submissions . Please try again in about ${Math.ceil(retryAfter / 60)} minute(s).`
-              : "Too many submissions . Please try again later.",
+              ? `Too many submissions. Please try again in about ${Math.ceil(retryAfter / 60)} minute(s).`
+              : "Too many submissions. Please try again later.",
         },
       };
     }
@@ -165,12 +165,12 @@ export async function submitWishlist(
         ? {
             code: "timeout",
             message:
-              "Couldn't send your answers please try again.",
+              "The request took too long. Please try again; your answers are still here.",
           }
         : {
             code: "network_error",
             message:
-              "Check your connection and try again , your answers are still here.",
+              "We could not reach the server. Check your connection and try again; your answers are still here.",
           },
     };
   } finally {

@@ -48,19 +48,21 @@ describe("wishlist submission schema", () => {
       user_type: "ai_startup",
       user_type_other: null,
       gpu_workloads: ["fine_tuning"],
+      gpu_workload_other: null,
       used_gpu_cloud: true,
       providers_used: ["runpod", "vast_ai"],
       previous_service_problems: ["price", "payment_method"],
       adoption_barriers: [],
       current_compute_solution: "rent_international",
       etb_payment_preference: "yes",
-      monthly_compute_budget: "5000_10000",
-      early_access_intent: "definitely",
     });
 
     // Abuse-protection fields are never persisted.
     expect(Object.keys(parsed.data)).not.toContain("honeypot");
     expect(Object.keys(parsed.data)).not.toContain("elapsedMs");
+    // Removed survey questions must not reappear in the row.
+    expect(Object.keys(parsed.data)).not.toContain("monthly_compute_budget");
+    expect(Object.keys(parsed.data)).not.toContain("early_access_intent");
   });
 
   it("accepts a complete 'never used' application with lower-cased email", () => {
@@ -72,6 +74,26 @@ describe("wishlist submission schema", () => {
     expect(parsed.data.adoption_barriers).toEqual(["too_expensive", "no_payment_method"]);
     expect(parsed.data.providers_used).toEqual([]);
     expect(parsed.data.previous_service_problems).toEqual([]);
+  });
+
+  it("accepts multiple GPU workloads", () => {
+    const parsed = wishlistSubmissionSchema.safeParse(
+      validYesPayload({ gpuWorkloads: ["llm_inference", "image_generation", "video_generation"] }),
+    );
+    expect(parsed.success).toBe(true);
+    if (!parsed.success) return;
+    expect(parsed.data.gpu_workloads).toEqual([
+      "llm_inference",
+      "image_generation",
+      "video_generation",
+    ]);
+  });
+
+  it("requires at least one GPU workload", () => {
+    const result = wishlistSubmissionSchema.safeParse(validYesPayload({ gpuWorkloads: [] }));
+    expect(result.success).toBe(false);
+    if (result.success) return;
+    expect(toFieldErrors(result.error).gpuWorkloads).toBeTruthy();
   });
 
   it("requires name and email", () => {
@@ -89,7 +111,7 @@ describe("wishlist submission schema", () => {
 
   it("rejects unknown enum values", () => {
     const result = wishlistSubmissionSchema.safeParse(
-      validYesPayload({ gpuWorkload: "quantum_simulations" as never }),
+      validYesPayload({ gpuWorkloads: ["quantum_simulations"] as never }),
     );
     expect(result.success).toBe(false);
   });
@@ -164,6 +186,57 @@ describe("wishlist submission schema", () => {
     expect(parsed.data.user_type_other).toBe("Independent consultant");
     expect(parsed.data.providers_other).toBe("A regional provider");
   });
+
+  it("stores custom memory and frequency details", () => {
+    const parsed = wishlistSubmissionSchema.safeParse(
+      validYesPayload({
+        vramRequirement: "custom",
+        vramRequirementOther: "Two H100s with 160 GB combined",
+        usageFrequency: "other",
+        usageFrequencyOther: "Weekends during the semester",
+      }),
+    );
+    expect(parsed.success).toBe(true);
+    if (!parsed.success) return;
+    expect(parsed.data.vram_requirement_other).toBe("Two H100s with 160 GB combined");
+    expect(parsed.data.usage_frequency_other).toBe("Weekends during the semester");
+  });
+
+  it("requires the opened field for every Other or Custom choice", () => {
+    const cases: Array<[string, ReturnType<typeof validYesPayload> | ReturnType<typeof validNoPayload>, string]> = [
+      ["user type", validYesPayload({ userType: "other" }), "userTypeOther"],
+      ["GPU workload", validYesPayload({ gpuWorkloads: ["other"] }), "gpuWorkloadOther"],
+      ["memory capacity", validYesPayload({ vramRequirement: "custom" }), "vramRequirementOther"],
+      ["usage frequency", validYesPayload({ usageFrequency: "other" }), "usageFrequencyOther"],
+      [
+        "provider",
+        validYesPayload({ providersUsed: ["runpod", "other"] }),
+        "providersOther",
+      ],
+      [
+        "service problem",
+        validYesPayload({ previousServiceProblems: ["price", "other"] }),
+        "previousServiceProblemsOther",
+      ],
+      [
+        "adoption barrier",
+        validNoPayload({ adoptionBarriers: ["too_expensive", "other"] }),
+        "adoptionBarriersOther",
+      ],
+      [
+        "current workaround",
+        validYesPayload({ currentComputeSolution: "other" }),
+        "currentComputeSolutionOther",
+      ],
+    ];
+
+    for (const [label, payload, field] of cases) {
+      const result = wishlistSubmissionSchema.safeParse(payload);
+      expect(result.success, `${label} should require ${field}`).toBe(false);
+      if (result.success) continue;
+      expect(toFieldErrors(result.error)[field], `${label} should report ${field}`).toBeTruthy();
+    }
+  });
 });
 
 describe("abuse signals", () => {
@@ -184,7 +257,7 @@ describe("payload builder", () => {
         identity: { fullName: "  Hanna Bekele ", email: "Hanna@Example.com" },
         answers: {
           userType: "ai_startup",
-          gpuWorkload: "llm_inference",
+          gpuWorkloads: ["llm_inference", "image_generation"],
           vramRequirement: "8_16gb",
           usageFrequency: "daily",
           usedGpuCloud: "no",
@@ -193,8 +266,6 @@ describe("payload builder", () => {
           adoptionBarriers: ["too_expensive"],
           currentComputeSolution: "own_computer",
           etbPaymentPreference: "yes",
-          monthlyComputeBudget: "lt_500",
-          earlyAccessIntent: "maybe",
         },
       },
       { honeypot: "", elapsedMs: 90_000 },
@@ -203,6 +274,7 @@ describe("payload builder", () => {
     expect(payload.providersUsed).toEqual([]);
     expect(payload.previousServiceProblems).toEqual([]);
     expect(payload.adoptionBarriers).toEqual(["too_expensive"]);
+    expect(payload.gpuWorkloads).toEqual(["llm_inference", "image_generation"]);
     expect(payload.usedGpuCloud).toBe(false);
     expect(payload.elapsedMs).toBe(90_000);
 
@@ -214,6 +286,7 @@ describe("payload builder", () => {
   it("produces an empty-string payload when answers are missing, so the server rejects it", () => {
     const payload = buildSubmissionPayload({ identity: {}, answers: {} });
     expect(payload.fullName).toBe("");
+    expect(payload.gpuWorkloads).toEqual([]);
     expect(wishlistSubmissionSchema.safeParse(payload).success).toBe(false);
   });
 });

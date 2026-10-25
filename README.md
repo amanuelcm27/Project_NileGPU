@@ -113,14 +113,21 @@ any client component, and a build-time check confirmed it is absent from
 2. Open the **SQL editor** and run
    [`supabase/migrations/0001_wishlist_applications.sql`](supabase/migrations/0001_wishlist_applications.sql).
    It is **idempotent** — re-running it drops and recreates the CHECK constraints,
-   so it is safe to apply again after changes.
+   adds/removes survey columns, and upgrades tables created by earlier revisions.
    (With the Supabase CLI: `supabase db push`.)
+   Existing deployments that already applied an earlier revision can run
+   [`0002_survey_updates.sql`](supabase/migrations/0002_survey_updates.sql)
+   instead; it applies the same survey schema update without touching RLS.
 3. Copy the project URL, anon key and `service_role` key into your environment.
 
 The migration creates `public.wishlist_applications` with:
 
 - enum-style `CHECK` constraints for every coded answer (kept in sync with the
   survey config — a unit test asserts parity);
+- multi-select storage for `gpu_workloads`, with a required free-text value when
+  the **Other** workload is selected;
+- required free-text checks for every **Other** / **Custom** choice, including
+  custom GPU memory and usage frequency;
 - a **branch-consistency** constraint: when `used_gpu_cloud = true` the
   `providers_used` and `previous_service_problems` arrays must be non-empty and
   `adoption_barriers` must be empty, and vice versa;
@@ -136,9 +143,11 @@ The migration creates `public.wishlist_applications` with:
 All writes go through the server route handler using the service-role key.
 
 > **Existing project?** Re-run the migration after pulling this change to add the
-> unique email index. If the table already contains duplicate addresses, the
-> migration stops with a clear message instead of deleting applicant data; resolve
-> those rows first, then re-run it.
+> unique email index and apply the survey schema update. If the table already
+> contains duplicate addresses, the migration stops with a clear message instead
+> of deleting applicant data; resolve those rows first, then re-run it. The survey
+> update removes the retired budget and early-access-intent columns, so export
+> those answers first if you need them for historical reporting.
 
 ---
 
@@ -170,14 +179,16 @@ Request: `Content-Type: application/json`, body ≤ 16 KB.
   "fullName": "Hanna Bekele",
   "email": "hanna@example.com",
   "userType": "ai_startup",              // stable enum id
-  "userTypeOther": "…",                  // only when userType = "other"
-  "gpuWorkload": "llm_inference",
-  "gpuWorkloadOther": "…",
+  "userTypeOther": "…",                  // required when userType = "other"
+  "gpuWorkloads": ["llm_inference", "image_generation"],
+  "gpuWorkloadOther": "…",               // required when "other" is selected
   "vramRequirement": "24_48gb",
+  "vramRequirementOther": "…",           // required when vramRequirement = "custom"
   "usageFrequency": "daily",
+  "usageFrequencyOther": "…",            // required when usageFrequency = "other"
   "usedGpuCloud": true,
   "providersUsed": ["runpod", "other"],  // when usedGpuCloud = true
-  "providersOther": "…",
+  "providersOther": "…",                 // required when "other" is selected
   "previousServiceProblems": ["price"],
   "previousServiceProblemsOther": "…",
   "adoptionBarriers": [],                // when usedGpuCloud = false
@@ -185,8 +196,6 @@ Request: `Content-Type: application/json`, body ≤ 16 KB.
   "currentComputeSolution": "own_computer",
   "currentComputeSolutionOther": "…",
   "etbPaymentPreference": "yes",
-  "monthlyComputeBudget": "2000_5000",
-  "earlyAccessIntent": "definitely",
   "honeypot": "",                        // abuse signal, never persisted
   "elapsedMs": 42000                     // abuse signal, never persisted
 }
@@ -238,8 +247,8 @@ The survey is **fully config-driven**; components contain no question copy.
   (prompt, options, single/multi select, optional free-text escape hatch). Option
   ids are **persisted to the database and must stay stable**; labels are display-only.
 - [`lib/survey/flow.ts`](lib/survey/flow.ts) — the declarative step sequence,
-  including conditional `branch` nodes and interstitials, plus `nextStepId` /
-  `previousStepId` / `stepForField`.
+  including conditional `branch` nodes, plus `nextStepId` / `previousStepId` /
+  `stepForField`.
 - [`lib/survey/engine.ts`](lib/survey/engine.ts) — `buildProgress`,
   `isStepAnswered`, answer pruning and the review rows.
 - [`lib/validation/wishlist.ts`](lib/validation/wishlist.ts) — one Zod schema that
@@ -250,6 +259,10 @@ Key behaviours:
 
 - **One question per screen** with real radio/checkbox inputs (native keyboard
   semantics: arrows within a group, space to toggle, one tab stop per group).
+- **Multi-select workloads.** The first compute question accepts more than one
+  workload, and the SQL column is a text array with a GIN index.
+- **Required free-text details.** Selecting **Other** or **Custom** reveals a
+  text field that must be filled before continuing; the server re-checks it.
 - **Conditional branching.** `usedGpuCloud = yes` routes to
   *providers used* → *problems experienced*; `no` routes to *adoption barriers*.
   Inapplicable answers are pruned on submit, and the server re-checks the same
@@ -257,9 +270,6 @@ Key behaviours:
 - **Honest progress.** The rail counts only *applicable* steps. While a branch
   answer is unknown the resolver expands the **longest** path, so the percentage
   never moves backwards and never credits an unanswered question as complete.
-- **Interstitials** after the first question group and near the end. They never
-  advance on their own: the applicant gets explicit **Back** and **Continue**
-  buttons after the transition.
 - **Back navigation preserves answers**, including answers on a branch you later
   abandoned.
 - **Review screen** lists every answer with inline edit links. Nothing is
@@ -405,7 +415,7 @@ in the Supabase dashboard / SQL editor.
 
 **Verified locally (no credentials required):**
 
-- `npm run lint`, `npm run typecheck`, `npm test` (72 tests across survey flow,
+- `npm run lint`, `npm run typecheck`, `npm test` (74 tests across survey flow,
   validation, the API endpoint, the submission client, and SQL↔config schema
   parity) all pass.
 - `npm run build` succeeds. Routes produced: `/` (static), `/privacy`,
@@ -413,21 +423,23 @@ in the Supabase dashboard / SQL editor.
   `/robots.txt`, `/sitemap.xml`.
 - The running production server was exercised in a browser: the full survey was
   completed end-to-end on **both** branches (progress climbs monotonically,
-  16→15 steps for the "yes" branch and 16→14 for "no"), "Other" free-text is kept,
-  Back/Edit preserve answers, and the review screen lists every answer.
+  12→11 steps for the "yes" branch and 12→10 for "no"), multiple workloads and
+  **Other** / **Custom** details are kept, Back/Edit preserve answers, and the
+  review screen lists every answer.
 - API behaviour confirmed against the live server: `201`-shaped success path is
   gated on storage; `422` for a cross-branch conflict; `400` for a filled
   honeypot; `429` with `Retry-After` when the rate limit trips; `413` for an
   oversized body; `405` for `GET`; `404` for unknown routes; and an honest
   `503 service_unconfigured` when Supabase env vars are absent.
-- Client-side validation blocks empty names and malformed emails and surfaces
-  field-level messages.
+- Client-side validation blocks empty names and malformed emails, requires at
+  least one workload, and requires the opened detail field for every
+  **Other** / **Custom** choice; failures surface as field-level messages.
 - The **interactive 3D card** was driven with real pointer events and frames were
   read back from the canvas: dragging rotates the board, a click explodes it into
   its layers, a second click reassembles it, and the exploded spread stays inside
   the frame. The static SVG schematic renders whenever 3D is unavailable.
-- Interstitials were confirmed to **wait for an explicit Continue**; Back returns
-  to the previous question, and no question sub-notes or extra helper copy remain.
+- The transition-only steps were removed; the survey moves directly from one
+  question to the next, and no question sub-notes or extra helper copy remain.
 - Lighthouse on the landing page **and** `/privacy`: **Accessibility 1.00,
   Best Practices 1.00, SEO 1.00**, with zero failed audits.
 - No console warnings or errors during navigation and interaction.

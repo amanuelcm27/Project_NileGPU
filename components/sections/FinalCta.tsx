@@ -1,9 +1,7 @@
-import { ArrowRight } from "lucide-react";
+import { Button } from "@/components/ui/Button";
 import { DrawRule } from "@/components/ui/DrawRule";
 import { Eyebrow } from "@/components/ui/Primitives";
 import { Reveal } from "@/components/ui/Reveal";
-import { TrackedCtaLink } from "@/components/ui/TrackedCtaLink";
-import { sectionIds } from "@/lib/config/navigation";
 
 const gpuNames = [
   "NVIDIA RTX 5090",
@@ -36,7 +34,7 @@ export function FinalCta() {
 
         <div className="mx-auto mt-12 max-w-3xl text-center">
           <Reveal>
-            <Eyebrow className="justify-center">EARLY ACCESS</Eyebrow>
+            <Eyebrow className="justify-center">Compute for all</Eyebrow>
           </Reveal>
           <Reveal delay={0.05}>
             <h2 className="mt-6 font-display text-[clamp(2rem,6vw,4rem)] leading-[1.02] tracking-[-0.02em] text-ink">
@@ -45,21 +43,15 @@ export function FinalCta() {
           </Reveal>
           <Reveal delay={0.1}>
             <p className="mx-auto mt-6 max-w-xl text-[1rem] leading-relaxed text-muted">
-              Every application shapes what we build first. Registration takes about two minutes and
-              tells us which workloads, memory sizes and payment paths matter most.
+              Every application shapes what we build first. Tell us which workloads, memory sizes
+              and payment paths matter most.
             </p>
           </Reveal>
           <Reveal delay={0.16}>
             <div className="mt-9 flex flex-col items-center justify-center gap-3 sm:flex-row">
-              <TrackedCtaLink
-                href={`#${sectionIds.earlyAccess}`}
-                source="final_cta"
-                size="lg"
-                className="w-full sm:w-auto"
-              >
-                Get Early Access
-                <ArrowRight aria-hidden className="h-4 w-4" />
-              </TrackedCtaLink>
+              <Button size="lg" disabled className="w-full sm:w-auto">
+                Coming soon
+              </Button>
             </div>
           </Reveal>
         </div>

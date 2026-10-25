@@ -1,7 +1,7 @@
 @import "tailwindcss";
 
 /* ==========================================================================
-   WaliaGPU design tokens
+   RedfoxGPU design tokens
    Palette, typography and motion values are the Tailwind theme itself, so
    utilities like `bg-obsidian`, `text-muted`, `border-line` and
    `animate-marquee` are generated from the values below.

@@ -3,7 +3,7 @@
 import { ArrowLeft, ArrowRight, Check } from "lucide-react";
 import { useId } from "react";
 import { Button } from "@/components/ui/Button";
-import { OTHER_OPTION_ID } from "@/lib/survey/questions";
+import { isFreeTextSelected } from "@/lib/survey/questions";
 import type { AnswerKey, QuestionDef } from "@/lib/survey/types";
 import { cn } from "@/lib/utils/cn";
 
@@ -44,7 +44,7 @@ export function QuestionStep({
   const isMulti = question.selection === "multi";
   const selectedList = Array.isArray(value) ? value : [];
   const selectedSingle = typeof value === "string" ? value : "";
-  const otherSelected = isMulti ? selectedList.includes(OTHER_OPTION_ID) : selectedSingle === OTHER_OPTION_ID;
+  const otherSelected = isFreeTextSelected(question, value);
   const otherError = question.otherKey ? fieldErrors[question.otherKey] : undefined;
 
   const handleSelect = (optionId: string) => {
@@ -145,7 +145,7 @@ export function QuestionStep({
       {question.allowOther && otherSelected ? (
         <div className="mt-5 border-l-2 border-primary/60 pl-4">
           <label htmlFor={otherFieldId} className="label-mono-sm block text-primary">
-            Optional detail
+            Required detail
           </label>
           <input
             id={otherFieldId}
@@ -153,6 +153,7 @@ export function QuestionStep({
             value={otherValue ?? ""}
             maxLength={200}
             autoComplete="off"
+            aria-required="true"
             aria-describedby={otherError ? `${otherId}-error` : undefined}
             aria-invalid={otherError ? true : undefined}
             onChange={(event) =>

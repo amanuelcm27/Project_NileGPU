@@ -1,21 +1,5 @@
-import type { InterstitialDef, StepDef, StepId, SurveyAnswers } from "@/lib/survey/types";
+import type { StepDef, StepId, SurveyAnswers } from "@/lib/survey/types";
 import { getQuestion, isQuestionStep } from "@/lib/survey/questions";
-
-/** Short transitions placed between question groups. */
-export const interstitials = {
-  interstitialHalfway: {
-    id: "interstitialHalfway",
-    kind: "interstitial",
-    headline: "You're halfway through.",
-    supporting: "Let's understand how you work with compute today.",
-  },
-  interstitialAlmost: {
-    id: "interstitialAlmost",
-    kind: "interstitial",
-    headline: "Almost there.",
-    supporting: "A few more answers and you will be the first to get access.",
-  },
-} satisfies Record<"interstitialHalfway" | "interstitialAlmost", InterstitialDef>;
 
 /**
  * Declarative survey flow.
@@ -41,10 +25,9 @@ export type FlowNode =
 export const stepSequence: FlowNode[] = [
   { type: "step", id: "identity" },
   { type: "step", id: "userType" },
-  { type: "step", id: "gpuWorkload" },
+  { type: "step", id: "gpuWorkloads" },
   { type: "step", id: "vramRequirement" },
   { type: "step", id: "usageFrequency" },
-  { type: "step", id: "interstitialHalfway" },
   { type: "step", id: "usedGpuCloud" },
   {
     type: "branch",
@@ -54,10 +37,7 @@ export const stepSequence: FlowNode[] = [
     otherwise: ["adoptionBarriers"],
   },
   { type: "step", id: "currentComputeSolution" },
-  { type: "step", id: "interstitialAlmost" },
   { type: "step", id: "etbPaymentPreference" },
-  { type: "step", id: "monthlyComputeBudget" },
-  { type: "step", id: "earlyAccessIntent" },
   { type: "step", id: "review" },
 ];
 
@@ -106,7 +86,7 @@ export function getStepDef(id: StepId): StepDef {
   if (isQuestionStep(id)) {
     return getQuestion(id);
   }
-  return interstitials[id as keyof typeof interstitials];
+  throw new Error(`Unknown survey step: ${id}`);
 }
 
 /** Step that follows `id` in the resolved flow, or null at the end. */
@@ -132,10 +112,12 @@ export const stepForField: Record<string, StepId> = {
   email: "identity",
   userType: "userType",
   userTypeOther: "userType",
-  gpuWorkload: "gpuWorkload",
-  gpuWorkloadOther: "gpuWorkload",
+  gpuWorkloads: "gpuWorkloads",
+  gpuWorkloadOther: "gpuWorkloads",
   vramRequirement: "vramRequirement",
+  vramRequirementOther: "vramRequirement",
   usageFrequency: "usageFrequency",
+  usageFrequencyOther: "usageFrequency",
   usedGpuCloud: "usedGpuCloud",
   providersUsed: "providersUsed",
   providersOther: "providersUsed",
@@ -146,6 +128,4 @@ export const stepForField: Record<string, StepId> = {
   currentComputeSolution: "currentComputeSolution",
   currentComputeSolutionOther: "currentComputeSolution",
   etbPaymentPreference: "etbPaymentPreference",
-  monthlyComputeBudget: "monthlyComputeBudget",
-  earlyAccessIntent: "earlyAccessIntent",
 };

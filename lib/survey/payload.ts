@@ -37,11 +37,13 @@ export function buildSubmissionPayload(
     userType: single("userType"),
     userTypeOther: other("userTypeOther"),
 
-    gpuWorkload: single("gpuWorkload"),
+    gpuWorkloads: list("gpuWorkloads"),
     gpuWorkloadOther: other("gpuWorkloadOther"),
 
     vramRequirement: single("vramRequirement"),
+    vramRequirementOther: other("vramRequirementOther"),
     usageFrequency: single("usageFrequency"),
+    usageFrequencyOther: other("usageFrequencyOther"),
 
     usedGpuCloud: answers.usedGpuCloud === "yes",
 
@@ -58,8 +60,6 @@ export function buildSubmissionPayload(
     currentComputeSolutionOther: other("currentComputeSolutionOther"),
 
     etbPaymentPreference: single("etbPaymentPreference"),
-    monthlyComputeBudget: single("monthlyComputeBudget"),
-    earlyAccessIntent: single("earlyAccessIntent"),
 
     honeypot: extras.honeypot,
     elapsedMs: extras.elapsedMs,

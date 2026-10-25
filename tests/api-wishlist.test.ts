@@ -78,7 +78,7 @@ describe("POST /api/wishlist", () => {
 
   it("rejects invalid payloads with field-level errors", async () => {
     const response = await handleWishlistPost(
-      postRequest({ ...validYesPayload(), fullName: "", gpuWorkload: "unknown_value" }),
+      postRequest({ ...validYesPayload(), fullName: "", gpuWorkloads: ["unknown_value"] }),
     );
     expect(response.status).toBe(422);
 
@@ -86,7 +86,7 @@ describe("POST /api/wishlist", () => {
     expect(body.ok).toBe(false);
     expect(body.error.code).toBe("validation_failed");
     expect(body.error.fieldErrors.fullName).toBeTruthy();
-    expect(body.error.fieldErrors.gpuWorkload).toBeTruthy();
+    expect(body.error.fieldErrors.gpuWorkloads).toBeTruthy();
   });
 
   it("rejects conditional-logic violations coming from a hand-crafted client", async () => {
