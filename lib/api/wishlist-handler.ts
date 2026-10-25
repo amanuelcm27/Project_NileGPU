@@ -151,7 +151,7 @@ export async function handleWishlistPost(request: Request): Promise<Response> {
     );
     return failure(
       "storage_error",
-      "We could not save your application right now. Your answers are still here — please try again.",
+      "We could not save your application right now. Your answers are still here, please try again.",
       500,
       { requestId },
     );
@@ -182,7 +182,7 @@ export async function handleWishlistPost(request: Request): Promise<Response> {
     return failure(
       "storage_error",
       schemaNotReady
-        ? "Wishlist storage is not ready on this deployment yet, so your application was not saved."
+        ? "We couldn't submit your application right now. Your answers are still here — please try again later."
         : "We could not save your application right now. Your answers are still here — please try again.",
       500,
       { requestId },

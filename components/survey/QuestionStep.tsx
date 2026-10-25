@@ -73,10 +73,7 @@ export function QuestionStep({
 
   return (
     <div onKeyDown={handleKeyDown}>
-      <div className="flex items-center justify-between gap-4">
-        <span className="label-mono text-primary">QUESTION</span>
-        <span className="label-mono-sm text-muted">{question.field.toUpperCase()}</span>
-      </div>
+      
 
       <h3 id={promptId} className="mt-5 font-display text-[clamp(1.35rem,3.2vw,1.85rem)] leading-tight text-ink">
         {question.prompt}
@@ -145,7 +142,7 @@ export function QuestionStep({
       {question.allowOther && otherSelected ? (
         <div className="mt-5 border-l-2 border-primary/60 pl-4">
           <label htmlFor={otherFieldId} className="label-mono-sm block text-primary">
-            Required detail
+            Add detail
           </label>
           <input
             id={otherFieldId}
@@ -162,11 +159,6 @@ export function QuestionStep({
             placeholder={question.otherPlaceholder ?? "Add a short description"}
             className="mt-2 w-full max-w-xl border border-line bg-obsidian px-4 py-3 text-[0.92rem] text-ink placeholder:text-muted/60 focus:border-primary focus:outline-none"
           />
-          {otherError ? (
-            <p id={`${otherId}-error`} role="alert" className="mt-2 font-mono text-[0.72rem] text-danger">
-              {otherError}
-            </p>
-          ) : null}
         </div>
       ) : null}
 

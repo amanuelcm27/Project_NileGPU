@@ -170,7 +170,7 @@ export async function submitWishlist(
         : {
             code: "network_error",
             message:
-              "We could not reach the server. Check your connection and try again; your answers are still here.",
+              "Check your connection and try again; your answers are still here.",
           },
     };
   } finally {

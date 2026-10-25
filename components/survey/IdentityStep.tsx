@@ -47,6 +47,7 @@ export function IdentityStep({ values, errors, onChange, onSubmit }: IdentitySte
           value={values.fullName ?? ""}
           error={errors.fullName}
           onChange={(value) => onChange("fullName", value)}
+          placeholder="Your name"
         />
         <Field
           id="applicant-email"
