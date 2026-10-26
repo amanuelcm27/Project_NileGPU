@@ -49,12 +49,15 @@ export function Workloads() {
   };
 
   return (
-    <section id={sectionIds.workloads} className="section relative border-t border-line/70">
+    <section
+      id={sectionIds.workloads}
+      className="section relative overflow-hidden border-t border-line/70"
+    >
       <div aria-hidden className="absolute inset-0 trace-backdrop opacity-[0.35]" />
 
-      <div className="shell relative grid gap-10 lg:grid-cols-12 lg:gap-12">
+      <div className="shell relative grid min-w-0 gap-10 lg:grid-cols-12 lg:gap-12">
         {/* Heading + rail */}
-        <div className="lg:col-span-5">
+        <div className="min-w-0 lg:col-span-5">
           <Reveal>
             <Eyebrow>WORKLOADS / 01-06</Eyebrow>
             <h2 className="mt-6 font-display text-[clamp(1.9rem,4.4vw,3.1rem)] leading-[1.02] text-ink">
@@ -71,7 +74,7 @@ export function Workloads() {
               role="tablist"
               aria-label="GPU workloads"
               onKeyDown={handleKeyDown}
-              className="mt-8 flex snap-x snap-mandatory gap-2 overflow-x-auto pb-2 lg:mt-10 lg:flex-col lg:gap-0 lg:overflow-visible lg:pb-0"
+              className="mt-8 flex w-full max-w-full touch-pan-x snap-x snap-mandatory gap-2 overflow-x-auto overscroll-x-contain pb-3 lg:mt-10 lg:flex-col lg:gap-0 lg:overflow-visible lg:pb-0"
             >
               {workloads.map((workload, index) => {
                 const selected = index === activeIndex;
@@ -89,7 +92,7 @@ export function Workloads() {
                     tabIndex={selected ? 0 : -1}
                     onClick={() => setActiveIndex(index)}
                     className={cn(
-                      "group flex shrink-0 snap-start items-center gap-3 border px-4 py-3 text-left transition-colors lg:w-full lg:border-x-0 lg:border-t-0 lg:px-0 lg:py-4",
+                      "group flex shrink-0 snap-start items-center gap-2.5 whitespace-nowrap border px-3 py-2.5 text-left transition-colors sm:gap-3 sm:px-4 sm:py-3 lg:w-full lg:border-x-0 lg:border-t-0 lg:px-0 lg:py-4",
                       selected
                         ? "border-primary/60 text-ink lg:border-b-line"
                         : "border-line text-muted hover:text-ink lg:border-b-line",
@@ -128,10 +131,10 @@ export function Workloads() {
         </div>
 
         {/* Detail panel */}
-        <div className="lg:col-span-7">
+        <div className="min-w-0 lg:col-span-7">
           <Reveal from="right" distance={18}>
-            <div className="panel clip-corner relative">
-              <div className="flex items-center justify-between border-b border-line px-5 py-3">
+            <div className="panel clip-corner relative w-full min-w-0">
+              <div className="flex flex-wrap items-center justify-between gap-2 border-b border-line px-4 py-2.5 sm:px-5 sm:py-3">
                 <span className="label-mono-sm text-muted">
                   WORKLOAD {active.index} / {String(workloads.length).padStart(2, "0")}
                 </span>
@@ -149,11 +152,11 @@ export function Workloads() {
                   animate={{ opacity: 1, x: 0 }}
                   exit={reduceMotion ? undefined : { opacity: 0, x: -14 }}
                   transition={{ duration: 0.28, ease: [0.22, 1, 0.36, 1] }}
-                  className="p-5 sm:p-7"
+                  className="min-w-0 p-4 sm:p-7"
                 >
-                  <div className="relative aspect-16/9 w-full overflow-hidden border border-line/80 bg-obsidian/60">
+                  <div className="relative mx-auto aspect-16/9 w-full max-w-[15rem] overflow-hidden border border-line/80 bg-obsidian/60 sm:max-w-none">
                     <div aria-hidden className="grid-backdrop-fine absolute inset-0 opacity-30" />
-                    <div className="absolute inset-0 p-4">
+                    <div className="absolute inset-0 p-2 sm:p-4">
                       <WorkloadGlyph kind={active.id} />
                     </div>
                   </div>
@@ -176,7 +179,7 @@ export function Workloads() {
                 </motion.div>
               </AnimatePresence>
 
-              <div className="flex items-center justify-end border-t border-line px-5 py-4">
+              <div className="flex items-center justify-end border-t border-line px-4 py-3 sm:px-5 sm:py-4">
                 <a
                   href={`#${sectionIds.earlyAccess}`}
                   className="label-mono-sm shrink-0 text-primary underline-offset-4 hover:underline"
