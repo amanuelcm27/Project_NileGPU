@@ -58,14 +58,16 @@ beforeEach(() => {
 describe("duplicate email protection", () => {
   it("rejects an email that already has an application", async () => {
     mocks.maybeSingle.mockResolvedValue({ data: { id: "existing" }, error: null });
+    const onStored = vi.fn();
 
-    const response = await handleWishlistPost(post());
+    const response = await handleWishlistPost(post(), { onStored });
     expect(response.status).toBe(409);
 
     const body = await response.json();
     expect(body.error.code).toBe("duplicate_email");
     expect(body.error.fieldErrors.email).toMatch(/already been submitted/i);
     expect(mocks.insert).not.toHaveBeenCalled();
+    expect(onStored).not.toHaveBeenCalled();
   });
 
   it("maps a unique-violation race to the same friendly 409", async () => {
@@ -96,5 +98,34 @@ describe("duplicate email protection", () => {
       application: { id: "new-application" },
     });
     expect(mocks.insert).toHaveBeenCalledTimes(1);
+  });
+
+  it("hands the stored application to the post-insert hook", async () => {
+    const onStored = vi.fn();
+
+    const response = await handleWishlistPost(post(), { onStored });
+
+    expect(response.status).toBe(201);
+    expect(onStored).toHaveBeenCalledWith({
+      id: "new-application",
+      fullName: "Hanna Bekele",
+      email: "hanna@example.com",
+      requestId: expect.any(String),
+    });
+  });
+
+  it("keeps the successful response when the post-insert hook fails", async () => {
+    const warn = vi.spyOn(console, "warn").mockImplementation(() => {});
+    try {
+      const response = await handleWishlistPost(post(), {
+        onStored: () => {
+          throw new Error("background hook failed");
+        },
+      });
+      expect(response.status).toBe(201);
+      expect(warn).toHaveBeenCalled();
+    } finally {
+      warn.mockRestore();
+    }
   });
 });

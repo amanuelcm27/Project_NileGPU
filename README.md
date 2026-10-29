@@ -24,6 +24,7 @@ The app has two jobs:
 - [Getting started](#getting-started)
 - [Environment variables](#environment-variables)
 - [Supabase setup](#supabase-setup)
+- [Confirmation email](#confirmation-email)
 - [Scripts](#scripts)
 - [API contract](#api-contract)
 - [How the survey works](#how-the-survey-works)
@@ -50,6 +51,7 @@ The app has two jobs:
 | Icons           | `lucide-react`                                                |
 | Validation      | Zod 4 (shared by client and server)                           |
 | Database        | Supabase (PostgreSQL) with Row Level Security                 |
+| Email           | Gmail SMTP via Nodemailer                                     |
 | Testing         | Vitest                                                        |
 | Lint / types    | ESLint 10 (`eslint-config-next`) + `tsc --noEmit`             |
 
@@ -93,17 +95,29 @@ keys.**
 | `NEXT_PUBLIC_ANALYTICS_ENDPOINT`| No       | Client      | Optional analytics sink. Empty disables forwarding.                                       |
 | `UPSTASH_REDIS_REST_URL`        | No       | **Server**  | Distributed rate limiting (Upstash REST).                                                |
 | `UPSTASH_REDIS_REST_TOKEN`      | No       | **Server**  | Distributed rate limiting (Upstash REST).                                                |
+| `GMAIL_USER`                    | No       | **Server**  | Gmail account used to send confirmations, e.g. `contact@redfoxgpu.com`.                    |
+| `GMAIL_APP_PASSWORD`            | No       | **Server**  | Gmail App Password (16 characters; spaces are ignored). Empty disables delivery.          |
+| `EMAIL_FROM`                    | No       | **Server**  | Optional sender display value. Defaults to `"RedfoxGPU <GMAIL_USER>"`.                     |
+| `EMAIL_REPLY_TO`                | No       | **Server**  | Reply-To address. Defaults to the public contact address.                                 |
 
 \* Required only if you want submissions to be persisted. Without them the app
 still builds and serves, and submissions fail honestly.
 
+Confirmation email is **best-effort**. Set both `GMAIL_USER` and
+`GMAIL_APP_PASSWORD` to enable it. Delivery is scheduled after the API response,
+so a Gmail outage or bad app password can never turn a stored application into an
+error for the applicant.
+
 > **Founder action:** `NEXT_PUBLIC_CONTACT_EMAIL` defaults to a placeholder
 > address. Set it to a mailbox you actually monitor before launch. No office
 > address, phone number or legal registration is claimed anywhere on the site.
+> Before enabling confirmation email, turn on 2-Step Verification for the Gmail
+> account and create an App Password. Set `GMAIL_USER`, `GMAIL_APP_PASSWORD`, and
+> optionally `EMAIL_FROM` / `EMAIL_REPLY_TO`.
 
-Secrets are read only on the server. The service-role key is never imported into
-any client component, and a build-time check confirmed it is absent from
-`.next/static`.
+Secrets are read only on the server. The service-role key and Gmail App Password
+are never imported into any client component, and a build-time check confirmed
+the service-role key is absent from `.next/static`.
 
 ---
 
@@ -148,6 +162,46 @@ All writes go through the server route handler using the service-role key.
 > of deleting applicant data; resolve those rows first, then re-run it. The survey
 > update removes the retired budget and early-access-intent columns, so export
 > those answers first if you need them for historical reporting.
+
+---
+
+## Confirmation email
+
+After a row is stored, `POST /api/wishlist` schedules a confirmation email to the
+address supplied in the application. The send runs **after the response** through
+Next.js `after()`, so the applicant never waits for it:
+
+- **Success** — the applicant receives a branded HTML email (with a plain-text
+  fallback) confirming that their application was submitted and that we will
+  notify them when early access opens.
+- **Failure** — the error is swallowed for the applicant and logged server-side
+  with the request ID only. The application remains saved and the API response is
+  unchanged.
+- **Not configured** — if `GMAIL_USER` or `GMAIL_APP_PASSWORD` is missing,
+  delivery is skipped silently. The wishlist itself still works.
+
+Implementation lives in
+[`lib/email/application-confirmation.ts`](lib/email/application-confirmation.ts)
+and [`lib/email/config.ts`](lib/email/config.ts). The email is sent through Gmail
+SMTP using Nodemailer, with connection/greeting/socket timeouts, and embeds the
+PNG logo as an inline attachment, so it renders even when remote images are
+blocked. Set `NEXT_PUBLIC_SITE_URL` to the public production origin for the footer
+link.
+
+To enable it:
+
+1. Turn on **2-Step Verification** for the Gmail account.
+2. Create an **App Password** (Google Account → Security → App passwords). This is
+   not the normal account password.
+3. Set `GMAIL_USER` and `GMAIL_APP_PASSWORD` in the server environment. Spaces in
+   the 16-character app password are ignored.
+4. Optionally set `EMAIL_FROM` and `EMAIL_REPLY_TO`; they default to
+   `RedfoxGPU <GMAIL_USER>` and the public contact address.
+5. Deploy and submit a test application. Check the recipient inbox (and the Gmail
+   account's Sent folder, if your Gmail settings keep SMTP copies).
+
+Gmail applies daily sending limits to free and Workspace accounts, so this is
+appropriate for wishlist confirmations rather than high-volume email.
 
 ---
 
@@ -201,7 +255,8 @@ Request: `Content-Type: application/json`, body ≤ 16 KB.
 }
 ```
 
-Success — **only after the row is written**:
+Success — **only after the row is written**. A best-effort confirmation email is
+queued after this response and never changes its status:
 
 ```json
 { "ok": true, "application": { "id": "8f1c…" } }
@@ -293,15 +348,18 @@ components/
   sections/             Hero, Workloads, HowItWorks, LocalAccess,
                         SurveySection, FinalCta, Footer
   survey/               SurveyApp + step components (Identity, Question,
-                        Interstitial, Review, SuccessDialog, ProgressRail)
+                        Review, SuccessDialog, ProgressRail)
   ui/                   Button, Reveal, Primitives, TrackedCtaLink, DrawRule
   visuals/              GpuVisual (lazy 3D), GpuSchematic (SVG base/fallback),
                         GpuScene (interactive card), WorkloadGlyph
+public/
+  email-logo.png        Source/preview file for the inline email logo
 lib/
   config/               brand, theme, metadata, navigation, workloads
   survey/               types, questions, flow, engine, payload
   validation/           wishlist schema, env helpers
   api/                  wishlist-handler (server), wishlist-client (browser)
+  email/                Gmail SMTP config + confirmation template/sender
   supabase/admin.ts     Server-only service-role client
   rate-limit.ts         In-memory + optional Upstash limiter
   analytics/index.ts    Typed, PII-scrubbing product events
@@ -340,6 +398,9 @@ tests/                  Vitest suites (flow, validation, endpoint, schema parity
   is never stored on its own — only as part of a complete application. Each email
   address can submit once; duplicates are rejected by the API and blocked by a
   unique database index.
+- **Confirmation email is server-only and best-effort.** The applicant address is
+  used only as the recipient; delivery failures are logged with a request ID and
+  never expose database or provider details to the browser.
 
 ---
 
@@ -415,9 +476,9 @@ in the Supabase dashboard / SQL editor.
 
 **Verified locally (no credentials required):**
 
-- `npm run lint`, `npm run typecheck`, `npm test` (74 tests across survey flow,
-  validation, the API endpoint, the submission client, and SQL↔config schema
-  parity) all pass.
+- `npm run lint`, `npm run typecheck`, `npm test` (82 tests across survey flow,
+  validation, the API endpoint, the submission client, email template/delivery
+  handling, and SQL↔config schema parity) all pass.
 - `npm run build` succeeds. Routes produced: `/` (static), `/privacy`,
   `/api/wishlist` (dynamic), `/icon.svg`, `/opengraph-image`, `/twitter-image`,
   `/robots.txt`, `/sitemap.xml`.
@@ -434,6 +495,11 @@ in the Supabase dashboard / SQL editor.
 - Client-side validation blocks empty names and malformed emails, requires at
   least one workload, and requires the opened detail field for every
   **Other** / **Custom** choice; failures surface as field-level messages.
+- Confirmation email was verified in unit tests: the branded HTML/text template,
+  inline logo attachment, HTML escaping, Gmail SMTP message, and auth / network /
+  timeout / provider failures. A failure in the post-insert hook does not change a
+  successful `201` response. No live email was sent in this environment because no
+  Gmail App Password is configured.
 - The **interactive 3D card** was driven with real pointer events and frames were
   read back from the canvas: dragging rotates the board, a click explodes it into
   its layers, a second click reassembles it, and the exploded spread stays inside
@@ -461,6 +527,9 @@ in the Supabase dashboard / SQL editor.
 - The default rate limiter is per-instance only (see [Rate limiting](#rate-limiting)).
 - `NEXT_PUBLIC_CONTACT_EMAIL` ships with a placeholder and must be set by the
   founder before launch.
+- Confirmation email requires a Gmail App Password and 2-Step Verification.
+  Without both, delivery is skipped silently; applications are still stored
+  normally.
 - There is no admin UI; analysis happens in Supabase.
 - There is no self-service way to change the email on an existing application;
   contact the founder if an applicant needs that.

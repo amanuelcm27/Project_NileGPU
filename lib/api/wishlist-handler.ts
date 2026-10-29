@@ -32,8 +32,38 @@ import {
 
 const NO_STORE = { "Cache-Control": "no-store" };
 
+export interface WishlistStoredApplication {
+  id: string;
+  fullName: string;
+  email: string;
+  requestId: string;
+}
+
+export interface WishlistHandlerOptions {
+  /**
+   * Called synchronously after the database confirms the insert.
+   *
+   * The route uses this to schedule a background confirmation email with
+   * Next.js `after()`. A throwing hook is logged and otherwise ignored so it
+   * can never change a successful submission into an error response.
+   */
+  onStored?: (application: WishlistStoredApplication) => void;
+}
+
 function json(body: unknown, status: number, headers: Record<string, string> = {}) {
   return Response.json(body, { status, headers: { ...NO_STORE, ...headers } });
+}
+
+function notifyStored(
+  onStored: WishlistHandlerOptions["onStored"],
+  application: WishlistStoredApplication,
+) {
+  if (!onStored) return;
+  try {
+    onStored(application);
+  } catch {
+    console.warn(`[redfoxgpu] wishlist post-insert hook failed (request ${application.requestId})`);
+  }
 }
 
 export function failure(
@@ -57,7 +87,10 @@ function duplicateEmailFailure(requestId: string) {
   });
 }
 
-export async function handleWishlistPost(request: Request): Promise<Response> {
+export async function handleWishlistPost(
+  request: Request,
+  options: WishlistHandlerOptions = {},
+): Promise<Response> {
   const requestId = crypto.randomUUID();
 
   // --- 1. Request shape and size -------------------------------------------
@@ -198,6 +231,13 @@ export async function handleWishlistPost(request: Request): Promise<Response> {
       { requestId },
     );
   }
+
+  notifyStored(options.onStored, {
+    id: data.id,
+    fullName: row.full_name,
+    email: row.email,
+    requestId,
+  });
 
   return json({ ok: true, application: { id: data.id } }, 201);
 }

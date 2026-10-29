@@ -3,6 +3,9 @@ import type { NextConfig } from "next";
 const nextConfig: NextConfig = {
   reactStrictMode: true,
   poweredByHeader: false,
+  // Nodemailer is server-only and uses optional Node transports; keep it external
+  // so the bundler does not try to inline it.
+  serverExternalPackages: ["nodemailer"],
   // The landing page is static-first; heavy visuals are dynamically imported.
   experimental: {
     optimizePackageImports: ["lucide-react", "framer-motion"],
